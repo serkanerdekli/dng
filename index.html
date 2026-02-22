@@ -1,14 +1,152 @@
 <!DOCTYPE html>
 <html lang="tr">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DnGBooks | Kitapçı Envanteri</title>
-    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,700;1,400&family=Courier+Prime&display=swap" rel="stylesheet">
-  </head>
-  <body class="bg-[#fdf5e6]">
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dgbooks | Kitap Mağazası</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --primary: #2c3e50; --accent: #27ae60; --bg: #f8f9fa; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--primary); }
+        .nav { background: white; padding: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        .container { max-width: 800px; margin: 20px auto; padding: 15px; }
+        
+        /* Arama Alanı */
+        .search-box { width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 12px; font-size: 1.1rem; outline: none; transition: 0.3s; box-sizing: border-box; }
+        .search-box:focus { border-color: var(--accent); }
+
+        /* Kitap Kartları */
+        .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-top: 20px; }
+        .book-card { background: white; padding: 10px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; transition: 0.3s; }
+        .book-card:hover { transform: translateY(-5px); }
+        .book-card img { width: 100%; height: 200px; object-fit: cover; border-radius: 6px; }
+        .book-card h3 { font-size: 0.9rem; margin: 10px 0 5px; height: 40px; overflow: hidden; }
+        .shelf-tag { background: #e8f5e9; color: var(--accent); padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
+
+        /* Admin Paneli (Başlangıçta Gizli) */
+        #adminPanel { display: none; background: #fff; padding: 20px; border-radius: 12px; margin-top: 20px; border: 1px solid #ddd; }
+        .admin-toggle { position: fixed; bottom: 10px; right: 10px; opacity: 0.3; cursor: pointer; }
+        .btn { background: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 1rem; margin-top: 10px; }
+        #reader { width: 100%; margin-top: 10px; border-radius: 8px; overflow: hidden; }
+        .form-group input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+<div class="nav">
+    <h2 onclick="location.reload()" style="cursor:pointer">📚 Dgbooks</h2>
+</div>
+
+<div class="container">
+    <!-- Müşteri Arama Ekranı -->
+    <div id="customerView">
+        <input type="text" class="search-box" id="searchInput" placeholder="Kitap adı, yazar veya ISBN ara..." oninput="searchBooks()">
+        <div id="results" class="book-grid">
+            <!-- Kitaplar buraya gelecek -->
+        </div>
+    </div>
+
+    <!-- Admin Paneli -->
+    <div id="adminPanel">
+        <h3>🛠 Stok Yönetimi (Barkod)</h3>
+        <div id="reader"></div>
+        <button class="btn" style="background:#3498db" onclick="startScanner()">Barkod Oku</button>
+        <div class="form-group">
+            <input type="text" id="bTitle" placeholder="Kitap Adı">
+            <input type="text" id="bAuthor" placeholder="Yazar">
+            <input type="text" id="bIsbn" placeholder="ISBN">
+            <input type="text" id="bShelf" placeholder="Raf (Örn: A1A)">
+            <input type="number" id="bPrice" placeholder="Fiyat">
+            <button class="btn" onclick="saveBook()">Envantere Ekle</button>
+        </div>
+        <button class="btn" style="background:#95a5a6; margin-top: 20px;" onclick="toggleAdmin()">Kapat</button>
+    </div>
+</div>
+
+<div class="admin-toggle" onclick="toggleAdmin()">⚙️ Yönetici</div>
+
+<script>
+    // --- KONFİGÜRASYON ---
+    const SUPABASE_URL = 'https://ubvlckmxzkniwhetbicx.supabase.co';
+    const SUPABASE_KEY = 'BURAYA_ANON_KEY_GELECEK'; // <--- Lütfen burayı doldur!
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // 1. Kitap Arama (Hızlı ve Akıllı)
+    async function searchBooks() {
+        const query = document.getElementById('searchInput').value;
+        if(query.length < 2) { loadAllBooks(); return; }
+
+        const { data, error } = await supabaseClient
+            .from('books')
+            .select('*')
+            .or(`title.ilike.%${query}%,author.ilike.%${query}%,isbn.eq.${query}`);
+
+        displayBooks(data);
+    }
+
+    // 2. Kitapları Listeleme
+    function displayBooks(books) {
+        const container = document.getElementById('results');
+        container.innerHTML = books.map(book => `
+            <div class="book-card">
+                <img src="${book.cover_url || 'https://via.placeholder.com/150x200?text=Kitap+Kapağı'}" alt="">
+                <h3>${book.title}</h3>
+                <p>${book.author}</p>
+                <span class="shelf-tag">📍 ${book.shelf_location || 'Belirsiz'}</span>
+                <p><strong>${book.price} ₺</strong></p>
+            </div>
+        `).join('');
+    }
+
+    async function loadAllBooks() {
+        const { data } = await supabaseClient.from('books').select('*').limit(20);
+        displayBooks(data);
+    }
+
+    // 3. Admin ve Barkod İşlemleri
+    function toggleAdmin() {
+        const panel = document.getElementById('adminPanel');
+        const view = document.getElementById('customerView');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        view.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+
+    let html5QrCode;
+    function startScanner() {
+        html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (decodedText) => {
+            document.getElementById('bIsbn').value = decodedText;
+            fetchFromGoogle(decodedText);
+            html5QrCode.stop();
+        });
+    }
+
+    async function fetchFromGoogle(isbn) {
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+        const data = await res.json();
+        if(data.items) {
+            const info = data.items[0].volumeInfo;
+            document.getElementById('bTitle').value = info.title;
+            document.getElementById('bAuthor').value = info.authors ? info.authors[0] : '';
+            document.getElementById('bShelf').value = info.title.charAt(0).toUpperCase() + "1A";
+        }
+    }
+
+    async function saveBook() {
+        const book = {
+            title: document.getElementById('bTitle').value,
+            author: document.getElementById('bAuthor').value,
+            isbn: document.getElementById('bIsbn').value,
+            shelf_location: document.getElementById('bShelf').value,
+            price: parseFloat(document.getElementById('bPrice').value)
+        };
+        const { error } = await supabaseClient.from('books').upsert([book]);
+        if(!error) { alert("Kaydedildi!"); location.reload(); }
+    }
+
+    // Başlangıçta kitapları getir
+    loadAllBooks();
+</script>
+</body>
 </html>
