@@ -3,85 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dgbooks Pro | Akıllı Mağaza Yönetimi</title>
+    <title>Dgbooks Pro | Tam Performans</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #1a1a2e; --accent: #0f3460; --success: #2ecc71; --danger: #e74c3c; --text: #333; --light: #f4f4f9; }
-        body { font-family: 'Poppins', sans-serif; background: var(--light); margin: 0; padding: 0; color: var(--text); overflow-x: hidden; }
+        :root { --primary: #1a1a2e; --accent: #0f3460; --success: #2ecc71; --danger: #e74c3c; --light: #f4f4f9; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--light); margin: 0; padding: 0; }
         
-        /* Navigasyon ve Arama */
-        .top-bar { position: fixed; top: 0; width: 100%; background: var(--primary); color: white; padding: 10px 0; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .top-bar { position: fixed; top: 0; width: 100%; background: var(--primary); color: white; padding: 15px 0; z-index: 1000; }
         .header-content { max-width: 1000px; margin: 0 auto; padding: 0 15px; }
-        .brand { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .brand h1 { margin: 0; font-size: 1.4rem; letter-spacing: 1px; }
-        .search-container { position: relative; }
         .search-box { width: 100%; padding: 12px 40px; border-radius: 30px; border: none; font-size: 1rem; outline: none; box-sizing: border-box; }
-        .search-icon { position: absolute; left: 15px; top: 12px; color: #888; }
-
-        /* Kitap Listesi */
-        .container { max-width: 1000px; margin: 140px auto 80px; padding: 15px; min-height: 80vh; }
+        
+        .container { max-width: 1000px; margin: 150px auto 80px; padding: 15px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
-        .card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.05); transition: 0.3s; position: relative; display: flex; flex-direction: column; }
-        .card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
-        .card img { width: 100%; height: 220px; object-fit: cover; border-bottom: 1px solid #eee; }
-        .card-info { padding: 12px; flex-grow: 1; text-align: center; }
-        .card-title { font-weight: 600; font-size: 0.9rem; margin: 0 0 5px; height: 38px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-        .card-author { font-size: 0.8rem; color: #777; margin-bottom: 8px; }
-        .shelf-badge { background: #e1f5fe; color: #0288d1; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
-        .stock-badge { position: absolute; top: 10px; right: 10px; padding: 4px 8px; border-radius: 5px; font-size: 0.65rem; color: white; font-weight: bold; }
+        
+        .no-result { grid-column: 1 / -1; text-align: center; padding: 40px; background: white; border-radius: 15px; color: #666; }
+        .no-result i { font-size: 3rem; color: #ddd; margin-bottom: 10px; }
 
-        /* Admin Paneli Modal */
+        .card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); cursor: pointer; position: relative; }
+        .card img { width: 100%; height: 220px; object-fit: cover; }
+        .card-info { padding: 12px; text-align: center; }
+        
+        /* Admin Modal */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; overflow-y: auto; padding: 20px; box-sizing: border-box; }
-        .modal-content { background: white; max-width: 500px; margin: 20px auto; border-radius: 20px; padding: 25px; position: relative; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.85rem; }
-        .form-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
-        .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-        .btn { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.2s; }
+        .modal-content { background: white; max-width: 500px; margin: 20px auto; border-radius: 20px; padding: 25px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; }
+        .form-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .btn-primary { background: var(--success); color: white; }
-        .btn-secondary { background: #ddd; color: #333; }
-        .btn-delete { background: var(--danger); color: white; margin-top: 10px; width: 100%; }
-
-        /* Yüzen Aksiyon Butonu */
-        .fab { position: fixed; bottom: 30px; right: 30px; width: 65px; height: 65px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; box-shadow: 0 5px 20px rgba(0,0,0,0.3); cursor: pointer; z-index: 1500; transition: 0.3s; }
-        .fab:hover { transform: rotate(90deg) scale(1.1); background: var(--accent); }
-
-        #reader { width: 100%; border-radius: 12px; overflow: hidden; margin-bottom: 15px; border: 3px solid var(--accent); }
+        .btn-cancel { background: #eee; color: #333; }
+        
+        #reader { width: 100%; border-radius: 12px; margin-bottom: 10px; border: 2px solid var(--accent); background: #000; }
+        .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; z-index: 1500; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
     <div class="header-content">
-        <div class="brand">
-            <h1>DGBOOKS PRO</h1>
-            <div id="connection-status" style="font-size: 0.7rem; opacity: 0.8;">Bağlanıyor...</div>
-        </div>
-        <div class="search-container">
-            <i class="fa fa-search search-icon"></i>
-            <input type="text" class="search-box" id="searchInput" placeholder="Kitap adı, yazar veya raf kodu ara..." oninput="handleSearch()">
+        <h2 style="margin:0 0 10px 0; font-size: 1.2rem;">📚 DGBOOKS PRO</h2>
+        <div style="position:relative;">
+            <i class="fa fa-search" style="position:absolute; left:15px; top:14px; color:#888;"></i>
+            <input type="text" class="search-box" id="searchInput" placeholder="Kitap veya raf ara..." oninput="handleSearch()">
         </div>
     </div>
 </div>
 
 <div class="container">
-    <div id="results" class="grid">
-        <!-- Kitaplar buraya akacak -->
-    </div>
+    <div id="results" class="grid"></div>
 </div>
 
-<!-- Yönetim Paneli Modalı -->
 <div id="adminModal" class="modal">
     <div class="modal-content">
-        <h2 id="modalTitle">Kitap Ekle / Düzenle</h2>
+        <h2 id="modalTitle">Kitap Kayıt</h2>
         <div id="reader"></div>
-        <button class="btn btn-primary" style="width:100%; background:#3498db; margin-bottom:15px;" onclick="startScanner()">
-            <i class="fa fa-barcode"></i> Barkod Tara
+        <button class="btn" style="background:#3498db; color:white;" onclick="startScanner()">
+            <i class="fa fa-camera"></i> Barkod Tara (Keskin Mod)
         </button>
         
-        <input type="hidden" id="bookId">
+        <div class="form-group">
+            <label>ISBN / Barkod</label>
+            <input type="text" id="bIsbn" placeholder="Barkod numarası..." onchange="fetchBookDetails(this.value)">
+        </div>
         <div class="form-group">
             <label>Kitap Adı</label>
             <input type="text" id="bTitle">
@@ -91,160 +77,121 @@
             <input type="text" id="bAuthor">
         </div>
         <div class="form-group">
-            <label>ISBN / Barkod</label>
-            <input type="text" id="bIsbn" onchange="fetchBookDetails(this.value)">
-        </div>
-        <div class="btn-row">
-            <div class="form-group">
-                <label>Raf Kodu (A1A)</label>
-                <input type="text" id="bShelf">
-            </div>
-            <div class="form-group">
-                <label>Stok Adedi</label>
-                <input type="number" id="bStock" value="1">
-            </div>
+            <label>Raf Kodu</label>
+            <input type="text" id="bShelf" placeholder="A1A">
         </div>
         <div class="form-group">
             <label>Fiyat (₺)</label>
             <input type="number" id="bPrice" step="0.01">
         </div>
+        <input type="hidden" id="bookId">
         <input type="hidden" id="bCover">
 
-        <button class="btn btn-primary" style="width:100%;" onclick="submitBook()">
-            <i class="fa fa-save"></i> Envanteri Güncelle
-        </button>
-        <button id="deleteBtn" class="btn btn-delete" style="display:none;" onclick="deleteBook()">
-            <i class="fa fa-trash"></i> Bu Kitabı Envanterden Sil
-        </button>
-        <button class="btn btn-secondary" style="width:100%; margin-top:10px;" onclick="closeAdmin()">Vazgeç</button>
+        <button class="btn btn-primary" onclick="submitBook()">KAYDET</button>
+        <button id="delBtn" class="btn" style="background:#e74c3c; color:white; display:none;" onclick="deleteBook()">SİL</button>
+        <button class="btn btn-cancel" onclick="closeAdmin()">KAPAT</button>
     </div>
 </div>
 
-<div class="fab" onclick="authAdmin()">
-    <i class="fa fa-cog"></i>
-</div>
+<div class="fab" onclick="authAdmin()"><i class="fa fa-plus"></i></div>
 
 <script>
     const SUPABASE_URL = 'https://ubvlckmxzkniwhetbicx.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVidmxja214emtuaXdoZXRiaWN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MDEzNjAsImV4cCI6MjA4NzI3NzM2MH0.e2XXUPmnLOywrKwmYc0eAhl5BHZk84MdFFbKbLhfnFI'; // <--- ASLA UNUTMA!
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVidmxja214emtuaXdoZXRiaWN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MDEzNjAsImV4cCI6MjA4NzI3NzM2MH0.e2XXUPmnLOywrKwmYc0eAhl5BHZk84MdFFbKbLhfnFI'; 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // 1. Sistem Başlatma
-    async function init() {
-        try {
-            const { data, error } = await supabaseClient.from('books_v2').select('id', { count: 'exact' });
-            if(error) throw error;
-            document.getElementById('connection-status').innerText = `🟢 Çevrimiçi: ${data.length} Kitap`;
-            loadBooks();
-        } catch (e) {
-            document.getElementById('connection-status').innerText = "🔴 Bağlantı Hatası!";
-        }
-    }
-
-    // 2. Kitapları Listeleme
     async function loadBooks() {
         const { data, error } = await supabaseClient.from('books_v2').select('*').order('created_at', { ascending: false });
-        if(!error) renderGrid(data);
+        renderGrid(data || []);
     }
 
     function renderGrid(books) {
         const container = document.getElementById('results');
+        if (books.length === 0) {
+            container.innerHTML = `
+                <div class="no-result">
+                    <i class="fa fa-book-open"></i>
+                    <p>Aradığınız kitap bulunamadı.<br><small>Lütfen başka bir anahtar kelime deneyin veya personele danışın.</small></p>
+                </div>`;
+            return;
+        }
         container.innerHTML = books.map(book => `
-            <div class="card" onclick="editBookMode(${JSON.stringify(book).replace(/"/g, '&quot;')})">
-                <div class="stock-badge" style="background:${book.stock_count > 0 ? 'var(--success)' : 'var(--danger)'}">
-                    ${book.stock_count > 0 ? 'STOKTA' : 'TÜKENDİ'}
-                </div>
-                <img src="${book.cover_url || 'https://via.placeholder.com/200x300?text=Dgbooks'}" loading="lazy">
+            <div class="card" onclick='openEditMode(${JSON.stringify(book)})'>
+                <img src="${book.cover_url || 'https://via.placeholder.com/200x300?text=Dgbooks'}">
                 <div class="card-info">
-                    <div class="card-title">${book.title}</div>
-                    <div class="card-author">${book.author || ''}</div>
-                    <div style="margin-top:10px;">
-                        <span class="shelf-badge"><i class="fa fa-map-marker-alt"></i> ${book.shelf_location || '-'}</span>
-                    </div>
-                    <div style="font-weight:bold; margin-top:8px; color:var(--primary)">${book.price} ₺</div>
+                    <div style="font-weight:600; font-size:0.9rem; height:34px; overflow:hidden;">${book.title}</div>
+                    <div style="font-size:0.75rem; color:#888; margin-top:5px;">📍 ${book.shelf_location || '-'}</div>
+                    <div style="font-weight:bold; margin-top:5px; color:#1a1a2e;">${book.price} ₺</div>
                 </div>
             </div>
         `).join('');
     }
 
-    // 3. Arama Algoritması
     async function handleSearch() {
         const q = document.getElementById('searchInput').value;
         if(!q) return loadBooks();
         const { data } = await supabaseClient.from('books_v2').select('*')
             .or(`title.ilike.%${q}%,author.ilike.%${q}%,isbn.eq.${q}%,shelf_location.ilike.%${q}%`);
-        renderGrid(data);
+        renderGrid(data || []);
     }
 
-    // 4. Admin Güvenlik ve Modal İşlemleri
     function authAdmin() {
-        const pin = prompt("Yönetici PIN kodunu girin (Varsayılan: 1234):");
-        if(pin === "1234") { // Burayı istediğin şifreyle değiştirebilirsin
-            resetForm();
-            document.getElementById('adminModal').style.display = 'block';
-        } else if(pin !== null) {
-            alert("Hatalı PIN!");
-        }
-    }
-
-    function closeAdmin() {
-        document.getElementById('adminModal').style.display = 'none';
-        if(html5QrCode) html5QrCode.stop();
+        // Hızlı giriş için PIN'i kaldırdım veya istersen 1234 kalsın
+        resetForm();
+        document.getElementById('adminModal').style.display = 'block';
     }
 
     function resetForm() {
-        document.getElementById('modalTitle').innerText = "Yeni Kitap Ekle";
         document.getElementById('bookId').value = "";
         document.getElementById('bTitle').value = "";
         document.getElementById('bAuthor').value = "";
         document.getElementById('bIsbn').value = "";
         document.getElementById('bShelf').value = "";
-        document.getElementById('bStock').value = "1";
         document.getElementById('bPrice').value = "";
         document.getElementById('bCover').value = "";
-        document.getElementById('deleteBtn').style.display = 'none';
+        document.getElementById('delBtn').style.display = 'none';
+        document.getElementById('modalTitle').innerText = "Yeni Kitap Ekle";
     }
 
-    function editBookMode(book) {
-        // Müşteri modunda kartlara tıklanınca düzenleme açılmasın diye kontrol ekleyebilirsin
-        // Şimdilik yönetim kolaylığı için doğrudan açıyoruz
+    function openEditMode(book) {
         document.getElementById('adminModal').style.display = 'block';
-        document.getElementById('modalTitle').innerText = "Kitabı Güncelle";
         document.getElementById('bookId').value = book.id;
         document.getElementById('bTitle').value = book.title;
         document.getElementById('bAuthor').value = book.author;
         document.getElementById('bIsbn').value = book.isbn;
         document.getElementById('bShelf').value = book.shelf_location;
-        document.getElementById('bStock').value = book.stock_count || 1;
         document.getElementById('bPrice').value = book.price;
         document.getElementById('bCover').value = book.cover_url;
-        document.getElementById('deleteBtn').style.display = 'block';
+        document.getElementById('delBtn').style.display = 'block';
+        document.getElementById('modalTitle').innerText = "Kitabı Güncelle";
     }
 
-    // 5. Barkod ve API Entegrasyonu
-    let html5QrCode;
+    let scanner;
     function startScanner() {
-        html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, (text) => {
+        if (scanner) scanner.clear();
+        scanner = new Html5Qrcode("reader");
+        const config = { fps: 20, qrbox: { width: 280, height: 160 }, aspectRatio: 1.77 }; // Yatay barkodlar için optimize
+        
+        scanner.start({ facingMode: "environment" }, config, (text) => {
             document.getElementById('bIsbn').value = text;
             fetchBookDetails(text);
-            html5QrCode.stop();
-        });
+            scanner.stop();
+        }).catch(err => alert("Kamera hatası: " + err));
     }
 
     async function fetchBookDetails(isbn) {
+        if(!isbn) return;
         const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
         const data = await res.json();
         if(data.items) {
             const b = data.items[0].volumeInfo;
-            document.getElementById('bTitle').value = b.title;
+            document.getElementById('bTitle').value = b.title || '';
             document.getElementById('bAuthor').value = b.authors ? b.authors[0] : '';
             document.getElementById('bCover').value = b.imageLinks ? b.imageLinks.thumbnail : '';
-            document.getElementById('bShelf').value = b.title.charAt(0).toUpperCase() + "1A";
+            document.getElementById('bShelf').value = b.title ? b.title.charAt(0).toUpperCase() + "1A" : "";
         }
     }
 
-    // 6. Kaydet ve Sil
     async function submitBook() {
         const id = document.getElementById('bookId').value;
         const payload = {
@@ -252,27 +199,32 @@
             author: document.getElementById('bAuthor').value,
             isbn: document.getElementById('bIsbn').value,
             shelf_location: document.getElementById('bShelf').value,
-            stock_count: parseInt(document.getElementById('bStock').value),
-            price: parseFloat(document.getElementById('bPrice').value),
+            price: parseFloat(document.getElementById('bPrice').value) || 0,
             cover_url: document.getElementById('bCover').value
         };
 
-        let result;
+        let error;
         if(id) {
-            result = await supabaseClient.from('books_v2').update(payload).eq('id', id);
+            const res = await supabaseClient.from('books_v2').update(payload).eq('id', id);
+            error = res.error;
         } else {
-            result = await supabaseClient.from('books_v2').insert([payload]);
+            // YENİ KAYITTA ID GÖNDERME (Supabase otomatik atar)
+            const res = await supabaseClient.from('books_v2').insert([payload]);
+            error = res.error;
         }
 
-        if(!result.error) {
-            alert("Başarıyla Kaydedildi!");
+        if(!error) {
+            alert("Kayıt Başarılı!");
             closeAdmin();
             loadBooks();
+        } else {
+            console.error(error);
+            alert("Hata oluştu: " + error.message);
         }
     }
 
     async function deleteBook() {
-        if(confirm("Bu kitabı tamamen silmek istediğinize emin misiniz?")) {
+        if(confirm("Silmek istediğinize emin misiniz?")) {
             const id = document.getElementById('bookId').value;
             await supabaseClient.from('books_v2').delete().eq('id', id);
             closeAdmin();
@@ -280,7 +232,12 @@
         }
     }
 
-    init();
+    function closeAdmin() {
+        document.getElementById('adminModal').style.display = 'none';
+        if(scanner) scanner.stop();
+    }
+
+    loadBooks();
 </script>
 </body>
 </html>
