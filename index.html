@@ -3,52 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dgbooks Pro | Tam Performans</title>
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <title>Dgbooks Pro | Stabil Sürüm</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #1a1a2e; --accent: #0f3460; --success: #2ecc71; --danger: #e74c3c; --light: #f4f4f9; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--light); margin: 0; padding: 0; }
+        :root { --primary: #1a1a2e; --accent: #16213e; --success: #27ae60; --danger: #e74c3c; --bg: #f4f4f9; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding: 0; }
         
-        .top-bar { position: fixed; top: 0; width: 100%; background: var(--primary); color: white; padding: 15px 0; z-index: 1000; }
-        .header-content { max-width: 1000px; margin: 0 auto; padding: 0 15px; }
-        .search-box { width: 100%; padding: 12px 40px; border-radius: 30px; border: none; font-size: 1rem; outline: none; box-sizing: border-box; }
-        
-        .container { max-width: 1000px; margin: 150px auto 80px; padding: 15px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
-        
-        .no-result { grid-column: 1 / -1; text-align: center; padding: 40px; background: white; border-radius: 15px; color: #666; }
-        .no-result i { font-size: 3rem; color: #ddd; margin-bottom: 10px; }
+        .header { position: fixed; top: 0; width: 100%; background: var(--primary); color: white; padding: 15px 0; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .header-content { max-width: 800px; margin: 0 auto; padding: 0 15px; text-align: center; }
+        .search-box { width: 100%; padding: 12px 20px; border-radius: 25px; border: none; margin-top: 10px; font-size: 1rem; outline: none; }
 
-        .card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); cursor: pointer; position: relative; }
-        .card img { width: 100%; height: 220px; object-fit: cover; }
-        .card-info { padding: 12px; text-align: center; }
+        .container { max-width: 900px; margin: 140px auto 100px; padding: 15px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
         
-        /* Admin Modal */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; overflow-y: auto; padding: 20px; box-sizing: border-box; }
-        .modal-content { background: white; max-width: 500px; margin: 20px auto; border-radius: 20px; padding: 25px; }
-        .form-group { margin-bottom: 12px; }
-        .form-group label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; }
-        .form-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); cursor: pointer; text-align: center; }
+        .card img { width: 100%; height: 200px; object-fit: cover; }
+        .card-body { padding: 10px; }
+        .card-title { font-weight: bold; font-size: 0.85rem; height: 35px; overflow: hidden; }
+
+        /* Modern Admin Panel */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; padding: 20px; box-sizing: border-box; }
+        .modal-content { background: white; max-width: 450px; margin: 10px auto; border-radius: 15px; padding: 20px; position: relative; }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group label { font-size: 0.75rem; font-weight: bold; color: #555; }
+        .form-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
         
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn-primary { background: var(--success); color: white; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 1rem; }
+        .btn-save { background: var(--success); color: white; }
         .btn-cancel { background: #eee; color: #333; }
-        
-        #reader { width: 100%; border-radius: 12px; margin-bottom: 10px; border: 2px solid var(--accent); background: #000; }
-        .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; z-index: 1500; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .btn-delete { background: var(--danger); color: white; }
+
+        .fab { position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .no-data { text-align: center; grid-column: 1/-1; padding: 50px; color: #888; }
     </style>
 </head>
 <body>
 
-<div class="top-bar">
+<div class="header">
     <div class="header-content">
-        <h2 style="margin:0 0 10px 0; font-size: 1.2rem;">📚 DGBOOKS PRO</h2>
-        <div style="position:relative;">
-            <i class="fa fa-search" style="position:absolute; left:15px; top:14px; color:#888;"></i>
-            <input type="text" class="search-box" id="searchInput" placeholder="Kitap veya raf ara..." oninput="handleSearch()">
-        </div>
+        <h2 style="margin:0;">📚 DGBOOKS PRO</h2>
+        <input type="text" class="search-box" id="searchInput" placeholder="Kitap, yazar veya raf ara..." oninput="handleSearch()">
     </div>
 </div>
 
@@ -58,16 +53,14 @@
 
 <div id="adminModal" class="modal">
     <div class="modal-content">
-        <h2 id="modalTitle">Kitap Kayıt</h2>
-        <div id="reader"></div>
-        <button class="btn" style="background:#3498db; color:white;" onclick="startScanner()">
-            <i class="fa fa-camera"></i> Barkod Tara (Keskin Mod)
-        </button>
+        <h3 id="modalTitle" style="margin-top:0;">Envanter Yönetimi</h3>
         
-        <div class="form-group">
-            <label>ISBN / Barkod</label>
-            <input type="text" id="bIsbn" placeholder="Barkod numarası..." onchange="fetchBookDetails(this.value)">
+        <div class="form-group" style="background: #f9f9f9; padding: 10px; border-radius: 10px;">
+            <label><i class="fa fa-barcode"></i> ISBN Okut / Yaz</label>
+            <input type="text" id="bIsbn" placeholder="Barkodu buraya yazın..." oninput="if(this.value.length >= 10) fetchFromGoogle(this.value)">
+            <small style="color:#777;">Barkodu yazdığınızda bilgiler otomatik gelir.</small>
         </div>
+
         <div class="form-group">
             <label>Kitap Adı</label>
             <input type="text" id="bTitle">
@@ -76,24 +69,27 @@
             <label>Yazar</label>
             <input type="text" id="bAuthor">
         </div>
-        <div class="form-group">
-            <label>Raf Kodu</label>
-            <input type="text" id="bShelf" placeholder="A1A">
+        <div class="form-group" style="display:flex; gap:10px;">
+            <div style="flex:1">
+                <label>Raf Kodu</label>
+                <input type="text" id="bShelf" placeholder="A1A">
+            </div>
+            <div style="flex:1">
+                <label>Fiyat (₺)</label>
+                <input type="number" id="bPrice" step="0.01">
+            </div>
         </div>
-        <div class="form-group">
-            <label>Fiyat (₺)</label>
-            <input type="number" id="bPrice" step="0.01">
-        </div>
+        
         <input type="hidden" id="bookId">
         <input type="hidden" id="bCover">
 
-        <button class="btn btn-primary" onclick="submitBook()">KAYDET</button>
-        <button id="delBtn" class="btn" style="background:#e74c3c; color:white; display:none;" onclick="deleteBook()">SİL</button>
-        <button class="btn btn-cancel" onclick="closeAdmin()">KAPAT</button>
+        <button class="btn btn-save" onclick="submitBook()">ENVANTERE KAYDET</button>
+        <button id="delBtn" class="btn btn-delete" style="display:none;" onclick="deleteBook()">SİL</button>
+        <button class="btn btn-cancel" onclick="closeAdmin()">VAZGEÇ</button>
     </div>
 </div>
 
-<div class="fab" onclick="authAdmin()"><i class="fa fa-plus"></i></div>
+<div class="fab" onclick="openAddMode()"><i class="fa fa-plus"></i></div>
 
 <script>
     const SUPABASE_URL = 'https://ubvlckmxzkniwhetbicx.supabase.co';
@@ -108,20 +104,16 @@
     function renderGrid(books) {
         const container = document.getElementById('results');
         if (books.length === 0) {
-            container.innerHTML = `
-                <div class="no-result">
-                    <i class="fa fa-book-open"></i>
-                    <p>Aradığınız kitap bulunamadı.<br><small>Lütfen başka bir anahtar kelime deneyin veya personele danışın.</small></p>
-                </div>`;
+            container.innerHTML = '<div class="no-data"><i class="fa fa-search" font-size:3rem></i><p>Kitap bulunamadı.</p></div>';
             return;
         }
         container.innerHTML = books.map(book => `
             <div class="card" onclick='openEditMode(${JSON.stringify(book)})'>
                 <img src="${book.cover_url || 'https://via.placeholder.com/200x300?text=Dgbooks'}">
-                <div class="card-info">
-                    <div style="font-weight:600; font-size:0.9rem; height:34px; overflow:hidden;">${book.title}</div>
-                    <div style="font-size:0.75rem; color:#888; margin-top:5px;">📍 ${book.shelf_location || '-'}</div>
-                    <div style="font-weight:bold; margin-top:5px; color:#1a1a2e;">${book.price} ₺</div>
+                <div class="card-body">
+                    <div class="card-title">${book.title}</div>
+                    <div style="color:var(--success); font-weight:bold; margin-top:5px;">📍 ${book.shelf_location || '-'}</div>
+                    <div style="font-size:0.9rem; margin-top:5px; font-weight:bold;">${book.price || 0} ₺</div>
                 </div>
             </div>
         `).join('');
@@ -135,10 +127,70 @@
         renderGrid(data || []);
     }
 
-    function authAdmin() {
-        // Hızlı giriş için PIN'i kaldırdım veya istersen 1234 kalsın
+    async function fetchFromGoogle(isbn) {
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+        const data = await res.json();
+        if(data.items) {
+            const b = data.items[0].volumeInfo;
+            document.getElementById('bTitle').value = b.title || '';
+            document.getElementById('bAuthor').value = b.authors ? b.authors[0] : '';
+            document.getElementById('bCover').value = b.imageLinks ? b.imageLinks.thumbnail : '';
+            document.getElementById('bShelf').value = b.title ? b.title.charAt(0).toUpperCase() + "1A" : "";
+        }
+    }
+
+    function openAddMode() {
         resetForm();
         document.getElementById('adminModal').style.display = 'block';
+    }
+
+    function openEditMode(book) {
+        document.getElementById('adminModal').style.display = 'block';
+        document.getElementById('bookId').value = book.id;
+        document.getElementById('bTitle').value = book.title;
+        document.getElementById('bAuthor').value = book.author;
+        document.getElementById('bIsbn').value = book.isbn;
+        document.getElementById('bShelf').value = book.shelf_location;
+        document.getElementById('bPrice').value = book.price;
+        document.getElementById('bCover').value = book.cover_url;
+        document.getElementById('delBtn').style.display = 'block';
+        document.getElementById('modalTitle').innerText = "Kitabı Düzenle";
+    }
+
+    async function submitBook() {
+        const id = document.getElementById('bookId').value;
+        const payload = {
+            title: document.getElementById('bTitle').value,
+            author: document.getElementById('bAuthor').value,
+            isbn: document.getElementById('bIsbn').value,
+            shelf_location: document.getElementById('bShelf').value,
+            price: parseFloat(document.getElementById('bPrice').value) || 0,
+            cover_url: document.getElementById('bCover').value
+        };
+
+        let result;
+        if(id) {
+            result = await supabaseClient.from('books_v2').update(payload).eq('id', id);
+        } else {
+            result = await supabaseClient.from('books_v2').insert([payload]);
+        }
+
+        if(!result.error) {
+            alert("Başarıyla Kaydedildi!");
+            closeAdmin();
+            loadBooks();
+        } else {
+            alert("Hata: " + result.error.message);
+        }
+    }
+
+    async function deleteBook() {
+        if(confirm("Silmek istediğinize emin misiniz?")) {
+            const id = document.getElementById('bookId').value;
+            await supabaseClient.from('books_v2').delete().eq('id', id);
+            closeAdmin();
+            loadBooks();
+        }
     }
 
     function resetForm() {
@@ -153,88 +205,8 @@
         document.getElementById('modalTitle').innerText = "Yeni Kitap Ekle";
     }
 
-    function openEditMode(book) {
-        document.getElementById('adminModal').style.display = 'block';
-        document.getElementById('bookId').value = book.id;
-        document.getElementById('bTitle').value = book.title;
-        document.getElementById('bAuthor').value = book.author;
-        document.getElementById('bIsbn').value = book.isbn;
-        document.getElementById('bShelf').value = book.shelf_location;
-        document.getElementById('bPrice').value = book.price;
-        document.getElementById('bCover').value = book.cover_url;
-        document.getElementById('delBtn').style.display = 'block';
-        document.getElementById('modalTitle').innerText = "Kitabı Güncelle";
-    }
-
-    let scanner;
-    function startScanner() {
-        if (scanner) scanner.clear();
-        scanner = new Html5Qrcode("reader");
-        const config = { fps: 20, qrbox: { width: 280, height: 160 }, aspectRatio: 1.77 }; // Yatay barkodlar için optimize
-        
-        scanner.start({ facingMode: "environment" }, config, (text) => {
-            document.getElementById('bIsbn').value = text;
-            fetchBookDetails(text);
-            scanner.stop();
-        }).catch(err => alert("Kamera hatası: " + err));
-    }
-
-    async function fetchBookDetails(isbn) {
-        if(!isbn) return;
-        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
-        const data = await res.json();
-        if(data.items) {
-            const b = data.items[0].volumeInfo;
-            document.getElementById('bTitle').value = b.title || '';
-            document.getElementById('bAuthor').value = b.authors ? b.authors[0] : '';
-            document.getElementById('bCover').value = b.imageLinks ? b.imageLinks.thumbnail : '';
-            document.getElementById('bShelf').value = b.title ? b.title.charAt(0).toUpperCase() + "1A" : "";
-        }
-    }
-
-    async function submitBook() {
-        const id = document.getElementById('bookId').value;
-        const payload = {
-            title: document.getElementById('bTitle').value,
-            author: document.getElementById('bAuthor').value,
-            isbn: document.getElementById('bIsbn').value,
-            shelf_location: document.getElementById('bShelf').value,
-            price: parseFloat(document.getElementById('bPrice').value) || 0,
-            cover_url: document.getElementById('bCover').value
-        };
-
-        let error;
-        if(id) {
-            const res = await supabaseClient.from('books_v2').update(payload).eq('id', id);
-            error = res.error;
-        } else {
-            // YENİ KAYITTA ID GÖNDERME (Supabase otomatik atar)
-            const res = await supabaseClient.from('books_v2').insert([payload]);
-            error = res.error;
-        }
-
-        if(!error) {
-            alert("Kayıt Başarılı!");
-            closeAdmin();
-            loadBooks();
-        } else {
-            console.error(error);
-            alert("Hata oluştu: " + error.message);
-        }
-    }
-
-    async function deleteBook() {
-        if(confirm("Silmek istediğinize emin misiniz?")) {
-            const id = document.getElementById('bookId').value;
-            await supabaseClient.from('books_v2').delete().eq('id', id);
-            closeAdmin();
-            loadBooks();
-        }
-    }
-
     function closeAdmin() {
         document.getElementById('adminModal').style.display = 'none';
-        if(scanner) scanner.stop();
     }
 
     loadBooks();
