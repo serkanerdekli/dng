@@ -47,9 +47,9 @@
 <button onclick="toggleAdmin()" style="position:fixed; bottom:10px; right:10px;">⚙️</button>
 
 <script>
-    // --- BU ALANI KENDİ BİLGİLERİNLE DOLDUR ---
+    // --- KONFİGÜRASYON ---
     const SUPABASE_URL = 'https://ubvlckmxzkniwhetbicx.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVidmxja214emtuaXdoZXRiaWN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MDEzNjAsImV4cCI6MjA4NzI3NzM2MH0.e2XXUPmnLOywrKwmYc0eAhl5BHZk84MdFFbKbLhfnFI'; // <--- BURAYI DEĞİŞTİR!
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVidmxja214emtuaXdoZXRiaWN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MDEzNjAsImV4cCI6MjA4NzI3NzM2MH0.e2XXUPmnLOywrKwmYc0eAhl5BHZk84MdFFbKbLhfnFI'; // <--- ANAHTARI BURAYA YAPIŞTIR
     
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -57,12 +57,20 @@
     async function initSystem() {
         const statusBar = document.getElementById('status-bar');
         try {
-            const { data, error } = await supabaseClient.from('books').select('count', { count: 'exact', head: true });
+            console.log("Bağlantı test ediliyor...");
+            // Burada 'data' yerine 'testResult' ismini kullanarak çakışmayı önlüyoruz
+            const { data: testData, error: testError } = await supabaseClient
+                .from('books_v2')
+                .select('id')
+                .limit(1);
             
-            if (error) throw error;
+            if (testError) throw testError;
 
-            statusBar.innerText = "✅ Sistem Aktif: Envanterde " + (data || 0) + " kitap var.";
+            statusBar.innerText = "✅ Sistem Aktif: books_v2 tablosuna bağlandı.";
             statusBar.className = "success";
+            console.log("Bağlantı başarılı.");
+            
+            // Bağlantı tamamsa kitapları yükle
             loadAllBooks();
         } catch (err) {
             statusBar.innerText = "❌ Bağlantı Hatası: " + err.message;
@@ -71,46 +79,60 @@
         }
     }
 
+    // 2. Kitapları Yükleme
     async function loadAllBooks() {
-        const { data, error } = await supabaseClient.from('books').select('*');
-        if (!error) displayBooks(data);
-    }
+        const { data: books, error: loadError } = await supabaseClient
+            .from('books_v2')
+            .select('*')
+            .order('title', { ascending: true });
 
-    function displayBooks(books) {
-        const container = document.getElementById('results');
-        if (!books || books.length === 0) {
-            container.innerHTML = "<p>Envanter şu an boş.</p>";
+        if (loadError) {
+            console.error("Yükleme Hatası:", loadError);
             return;
         }
-        container.innerHTML = books.map(book => `
+        displayBooks(books);
+    }
+
+    // 3. Ekrana Basma
+    function displayBooks(booksList) {
+        const container = document.getElementById('results');
+        if (!booksList || booksList.length === 0) {
+            container.innerHTML = "<p style='padding:20px;'>Envanter şu an boş. Admin panelinden kitap ekleyin.</p>";
+            return;
+        }
+        container.innerHTML = booksList.map(book => `
             <div class="book-card">
-                <img src="${book.cover_url || 'https://via.placeholder.com/150x200'}" alt="">
-                <h4>${book.title}</h4>
-                <p>${book.author}</p>
-                <small>📍 ${book.shelf_location || '-'}</small>
+                <img src="${book.cover_url || 'https://via.placeholder.com/150x200?text=Kapak+Yok'}" alt="">
+                <h4 style="margin:10px 0; font-size:0.9rem;">${book.title}</h4>
+                <p style="font-size:0.8rem; color:gray;">${book.author || 'Yazar Bilinmiyor'}</p>
+                <div style="margin-top:10px;">
+                    <span style="background:#e8f5e9; color:#27ae60; padding:3px 8px; border-radius:4px; font-weight:bold; font-size:0.75rem;">📍 ${book.shelf_location || '-'}</span>
+                </div>
             </div>
         `).join('');
     }
 
+    // 4. Arama Fonksiyonu
     async function searchBooks() {
         const query = document.getElementById('searchInput').value;
-        const { data } = await supabaseClient
-            // Eski: .from('books')
-            // Yeni:
-        const { data, error } = await supabaseClient
-                .from('books_v2') // Tüm sorguları books_v2 olarak güncelle
-                .select('*');
-                .select('*')
-                .or(`title.ilike.%${query}%,author.ilike.%${query}%`);
-        displayBooks(data);
+        if (query.trim() === "") { loadAllBooks(); return; }
+
+        const { data: searchResults, error: searchError } = await supabaseClient
+            .from('books_v2')
+            .select('*')
+            .or(`title.ilike.%${query}%,author.ilike.%${query}%`);
+
+        if (!searchError) displayBooks(searchResults);
     }
 
+    // 5. Admin Panel Geçişi
     function toggleAdmin() {
         const panel = document.getElementById('adminPanel');
         panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        if(panel.style.display === 'block') startScanner(); // Panel açılınca kamerayı hazırla
     }
 
-    // Sistemi başlat
+    // --- Uygulamayı Başlat ---
     initSystem();
 </script>
 </body>
