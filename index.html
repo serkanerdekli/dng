@@ -3,124 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dgbooks OS | Akıllı Envanter</title>
+    <title>Dgbooks | Veri Odaklı Keşif</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; color: #0f172a; }
         .view-section { display: none; }
-        .view-section.active { display: block; animation: fadeIn 0.2s ease; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); }
+        .view-section.active { display: block; animation: slideUp 0.4s cubic-bezier(0, 0, 0.2, 1); }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); }
+        .stat-card { transition: all 0.3s ease; cursor: pointer; border: 1px solid transparent; }
+        .stat-card:hover { transform: translateY(-5px); border-color: #6366f1; background: #ffffff; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1); }
+        .book-card:hover { transform: scale(1.02); transition: 0.3s; }
     </style>
 </head>
-<body class="text-slate-800">
+<body>
 
-    <!-- NAVIGASYON -->
-    <nav class="fixed top-0 w-full z-50 glass border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-sm">
-        <div class="flex items-center gap-2 cursor-pointer" onclick="showView('customer')">
-            <i class="fa fa-book-sparkles text-indigo-600 text-2xl"></i>
-            <h1 class="text-xl font-extrabold tracking-tighter">DGBOOKS</h1>
+    <!-- ÜST NAVİGASYON -->
+    <nav class="fixed top-0 w-full z-50 glass border-b border-slate-200 px-8 py-4 flex justify-between items-center shadow-sm">
+        <div class="flex items-center gap-2 cursor-pointer" onclick="resetAndShowHome()">
+            <div class="bg-indigo-600 p-2 rounded-xl shadow-lg shadow-indigo-200">
+                <i class="fa fa-book-open-reader text-white text-xl"></i>
+            </div>
+            <h1 class="text-2xl font-black tracking-tighter text-slate-800">DGBOOKS</h1>
         </div>
         <div id="navActions">
-            <button onclick="showView('login')" id="loginBtn" class="text-sm font-bold text-slate-500 hover:text-indigo-600">Yönetici Erişimi</button>
+            <button onclick="showView('login')" id="loginBtn" class="text-sm font-bold text-slate-500 hover:text-indigo-600 transition">Personel Erişimi</button>
             <button onclick="logout()" id="logoutBtn" class="hidden text-sm font-bold text-red-500">Güvenli Çıkış</button>
         </div>
     </nav>
 
     <!-- 1. MÜŞTERİ EKRANI -->
-    <main id="view-customer" class="view-section active pt-32 px-6 max-w-6xl mx-auto pb-20">
+    <main id="view-customer" class="view-section active pt-32 px-6 max-w-7xl mx-auto pb-20">
+        
+        <!-- Arama Alanı -->
         <div class="text-center mb-12">
-            <h2 class="text-5xl font-black mb-6 text-slate-900 tracking-tight">Kitabını <span class="text-indigo-600">Hemen Bul.</span></h2>
-            <div class="relative max-w-2xl mx-auto shadow-2xl rounded-3xl overflow-hidden bg-white">
-                <i class="fa fa-search absolute left-6 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="custSearch" oninput="handleSearch(this.value)" 
-                    class="w-full pl-16 pr-6 py-5 outline-none text-lg border-none" 
-                    placeholder="İsim, yazar veya raf kodu yazın...">
-            </div>
-            <div class="flex flex-wrap justify-center gap-4 mt-6 text-sm font-semibold text-slate-400">
-                <span class="opacity-50 uppercase">Hızlı:</span>
-                <button onclick="quickSearch('Roman')" class="hover:text-indigo-600">#Roman</button>
-                <button onclick="quickSearch('Klasik')" class="hover:text-indigo-600">#Klasik</button>
-                <button onclick="quickSearch('A1A')" class="hover:text-indigo-600">#RafA1A</button>
+            <h2 class="text-5xl md:text-6xl font-black mb-8 text-slate-900 tracking-tight leading-none">Keşfetmeye <span class="text-indigo-600">Başla.</span></h2>
+            <div class="relative max-w-2xl mx-auto shadow-2xl rounded-[28px] overflow-hidden bg-white group border-2 border-transparent focus-within:border-indigo-500 transition-all">
+                <i class="fa fa-search absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 text-xl group-focus-within:text-indigo-500"></i>
+                <input type="text" id="custSearch" oninput="handleCustomerSearch(this.value)" 
+                    class="w-full pl-16 pr-8 py-5 outline-none text-xl border-none font-medium" 
+                    placeholder="Kitap, yazar veya raf kodu...">
             </div>
         </div>
 
-        <div id="customerDashboard">
-            <h3 class="text-xl font-bold mb-8 flex items-center gap-2 text-slate-700">Yeni Eklenenler</h3>
-            <div id="newArrivalsGrid" class="grid grid-cols-2 md:grid-cols-4 gap-8"></div>
+        <!-- ANALİTİK DASHBOARD (MÜŞTERİ İÇİN) -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+            <div onclick="resetAndShowHome()" class="stat-card bg-white/50 p-6 rounded-[24px] shadow-sm">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl"><i class="fa fa-layer-group text-xl"></i></div>
+                    <span class="text-xs font-bold text-indigo-400 tracking-widest uppercase">Koleksiyon</span>
+                </div>
+                <h4 id="statTotal" class="text-3xl font-black text-slate-800">0</h4>
+                <p class="text-sm text-slate-500 font-medium">Toplam Eser</p>
+            </div>
+
+            <div onclick="quickSearch('Roman')" class="stat-card bg-white/50 p-6 rounded-[24px] shadow-sm">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="p-3 bg-pink-50 text-pink-600 rounded-xl"><i class="fa fa-heart text-xl"></i></div>
+                    <span class="text-xs font-bold text-pink-400 tracking-widest uppercase">Popüler</span>
+                </div>
+                <h4 id="statNovel" class="text-3xl font-black text-slate-800">0</h4>
+                <p class="text-sm text-slate-500 font-medium">Roman Türü</p>
+            </div>
+
+            <div onclick="quickSearch('Klasik')" class="stat-card bg-white/50 p-6 rounded-[24px] shadow-sm">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="p-3 bg-amber-50 text-amber-600 rounded-xl"><i class="fa fa-landmark text-xl"></i></div>
+                    <span class="text-xs font-bold text-amber-400 tracking-widest uppercase">Efsane</span>
+                </div>
+                <h4 id="statClassic" class="text-3xl font-black text-slate-800">0</h4>
+                <p class="text-sm text-slate-500 font-medium">Klasik Eserler</p>
+            </div>
+
+            <div onclick="quickSearch('A1A')" class="stat-card bg-white/50 p-6 rounded-[24px] shadow-sm">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><i class="fa fa-map-pin text-xl"></i></div>
+                    <span class="text-xs font-bold text-emerald-400 tracking-widest uppercase">Konum</span>
+                </div>
+                <h4 id="statShelves" class="text-3xl font-black text-slate-800">0</h4>
+                <p class="text-sm text-slate-500 font-medium">Aktif Raf</p>
+            </div>
         </div>
 
-        <div id="searchResults" class="hidden">
-            <h3 class="text-xl font-bold mb-8 text-indigo-600">Arama Sonuçları</h3>
-            <div id="searchGrid" class="grid grid-cols-2 md:grid-cols-5 gap-6"></div>
+        <!-- KİTAP LİSTESİ -->
+        <div id="customerGridArea">
+            <h3 id="gridTitle" class="text-2xl font-bold mb-8 text-slate-800 flex items-center gap-3">
+                <i class="fa fa-clock-rotate-left text-indigo-500"></i> Yeni Eklenenler
+            </h3>
+            <div id="mainGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+                <!-- Veriler Buraya -->
+            </div>
         </div>
     </main>
 
-    <!-- 2. LOGIN EKRANI -->
+    <!-- ADMIN PANELİ & DİĞER BÖLÜMLER AYNI MANTIKLA KORUNDU -->
     <section id="view-login" class="view-section pt-40 px-6 max-w-md mx-auto">
-        <div class="bg-white p-10 rounded-3xl shadow-2xl border border-slate-100 text-center">
-            <h2 class="text-2xl font-bold mb-6">Yönetici Erişimi</h2>
-            <input type="password" id="adminPin" class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center text-3xl tracking-[0.5em] outline-none focus:border-indigo-500 mb-6" placeholder="****">
-            <button onclick="attemptLogin()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition">Giriş Yap</button>
-            <button onclick="showView('customer')" class="mt-4 text-sm text-slate-400">Geri Dön</button>
+        <div class="bg-white p-12 rounded-[40px] shadow-2xl text-center border border-slate-100">
+            <h2 class="text-3xl font-black mb-8 text-slate-800">Yönetici Paneli</h2>
+            <input type="password" id="adminPin" class="w-full p-5 rounded-2xl bg-slate-50 border-none text-center text-4xl tracking-[0.5em] outline-none focus:ring-2 focus:ring-indigo-500 mb-8" placeholder="****">
+            <button onclick="attemptLogin()" class="w-full bg-indigo-600 text-white py-5 rounded-2xl font-bold text-xl hover:bg-indigo-700 shadow-xl shadow-indigo-100">Sisteme Giriş Yap</button>
         </div>
     </section>
 
-    <!-- 3. ADMIN PANELİ -->
     <section id="view-admin" class="view-section pt-32 px-6 max-w-7xl mx-auto pb-20">
-        <div class="flex justify-between items-end mb-10">
-            <div>
-                <h2 class="text-4xl font-black text-slate-900">Envanter <span class="text-indigo-600">Yönetimi</span></h2>
-                <p class="text-slate-500 font-medium">Hoş geldiniz. Envanteri buradan yönetebilirsiniz.</p>
+        <div class="flex flex-col md:flex-row justify-between items-center gap-6 mb-12">
+            <h2 class="text-4xl font-black text-slate-900">Envanter <span class="text-indigo-600">Yönetimi</span></h2>
+            <div class="flex gap-4 w-full md:w-auto">
+                <input type="text" oninput="handleAdminSearch(this.value)" placeholder="Envanterde ara..." class="bg-white px-6 py-3 rounded-2xl outline-none border border-slate-200 focus:border-indigo-500 flex-1 md:w-64">
+                <button onclick="openEditor()" class="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-indigo-700 shadow-xl">+ Yeni Kayıt</button>
             </div>
-            <button onclick="openEditor()" class="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-indigo-700 shadow-xl">+ Yeni Kitap</button>
         </div>
-
-        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-white rounded-[32px] shadow-sm border border-slate-200 overflow-hidden">
             <table class="w-full text-left">
-                <thead class="bg-slate-50 border-b border-slate-200">
-                    <tr>
-                        <th class="p-5 font-bold text-slate-600">Kitap & Yazar</th>
-                        <th class="p-5 font-bold text-slate-600">Raf / Fiyat</th>
-                        <th class="p-5 font-bold text-slate-600 text-right">İşlemler</th>
-                    </tr>
-                </thead>
+                <thead class="bg-slate-50 border-b"><tr><th class="p-6">Eser & Yazar</th><th class="p-6">Raf/Fiyat</th><th class="p-6 text-right">Aksiyon</th></tr></thead>
                 <tbody id="adminTableBody"></tbody>
             </table>
         </div>
     </section>
 
-    <!-- KİTAP EDİTÖRÜ MODAL -->
-    <div id="editorModal" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-4xl rounded-[40px] p-10 shadow-2xl overflow-y-auto max-h-[90vh]">
-            <div class="flex justify-between items-center mb-8">
-                <h2 class="text-3xl font-bold" id="modalTitle">Kitap Verisi</h2>
-                <button onclick="closeEditor()" class="text-3xl text-slate-300 hover:text-slate-900">&times;</button>
+    <!-- EDİTÖR MODAL -->
+    <div id="editorModal" class="hidden fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-xl flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-5xl rounded-[40px] p-10 shadow-2xl overflow-y-auto max-h-[95vh]">
+            <div class="flex justify-between items-center mb-10">
+                <h2 class="text-3xl font-black" id="modalTitle">Kitap Verisi</h2>
+                <button onclick="closeEditor()" class="text-4xl text-slate-300 hover:text-slate-900 transition">&times;</button>
             </div>
-            <div class="grid md:grid-cols-2 gap-10">
-                <div class="space-y-4">
-                    <input type="text" id="fTitle" placeholder="Kitap Adı" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-indigo-500">
-                    <input type="text" id="fAuthor" placeholder="Yazar" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-indigo-500">
-                    <button onclick="autoFillByInfo()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold text-sm hover:bg-black">
-                        <i class="fa fa-wand-magic-sparkles mr-2"></i> Kitap Bilgilerini & Resmi Bul
-                    </button>
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="text" id="fIsbn" placeholder="ISBN" class="p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none">
-                        <input type="text" id="fShelf" placeholder="Raf (A1A)" class="p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none text-center font-bold text-indigo-600">
+            <div class="grid md:grid-cols-2 gap-12">
+                <div class="space-y-6">
+                    <input type="text" id="fTitle" placeholder="Kitap Adı" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-transparent focus:border-indigo-500">
+                    <input type="text" id="fAuthor" placeholder="Yazar" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-transparent focus:border-indigo-500">
+                    <button onclick="getCoverSuggestions()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition"><i class="fa fa-wand-magic-sparkles mr-2"></i> Kapak Önerileri Getir</button>
+                    <div class="grid grid-cols-2 gap-6">
+                        <input type="text" id="fShelf" placeholder="Raf (A1A)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-transparent focus:border-indigo-500 text-indigo-600 font-bold">
+                        <input type="number" id="fPrice" placeholder="Fiyat" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-transparent focus:border-indigo-500">
                     </div>
-                    <input type="number" id="fPrice" placeholder="Fiyat" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none">
-                    <input type="hidden" id="fId">
-                    <input type="hidden" id="fCover">
-                    <button onclick="saveBook()" class="w-full bg-indigo-600 text-white py-5 rounded-[25px] font-black text-xl hover:bg-indigo-700">KAYDET</button>
+                    <input type="text" id="fCover" placeholder="Resim URL" oninput="updatePreview(this.value)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border border-transparent focus:border-indigo-500 text-xs">
+                    <input type="hidden" id="fId"><input type="hidden" id="fIsbn">
+                    <button onclick="saveBook()" class="w-full bg-indigo-600 text-white py-6 rounded-[24px] font-black text-xl hover:bg-indigo-700 shadow-2xl">KAYDET</button>
                 </div>
-                <div class="bg-slate-50 rounded-[40px] flex flex-col items-center justify-center p-8 border-4 border-dashed border-slate-200">
-                    <img id="fPrevImg" src="" class="max-h-[350px] rounded-2xl shadow-2xl hidden">
-                    <div id="fPrevPlaceholder" class="text-center text-slate-400">
-                        <i class="fa fa-image text-5xl mb-4"></i>
-                        <p class="text-sm">Kapak otomatik gelecek.</p>
+                <div class="space-y-6">
+                    <div class="bg-slate-50 rounded-[40px] flex items-center justify-center p-8 border-2 border-dashed border-slate-200 min-h-[350px]">
+                        <img id="fPrevImg" src="" class="max-h-[320px] rounded-2xl shadow-2xl hidden"><p id="fPrevPlaceholder" class="text-slate-400 font-medium text-center">Önizleme</p>
+                    </div>
+                    <div id="suggestionsArea" class="hidden space-y-4">
+                        <p class="text-xs font-bold text-indigo-500 uppercase">Resim Seçin:</p>
+                        <div id="suggestionsGrid" class="grid grid-cols-3 gap-4"></div>
                     </div>
                 </div>
             </div>
@@ -129,7 +159,7 @@
 
     <script>
         const SB_URL = 'https://ubvlckmxzkniwhetbicx.supabase.co';
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVidmxja214emtuaXdoZXRiaWN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MDEzNjAsImV4cCI6MjA4NzI3NzM2MH0.e2XXUPmnLOywrKwmYc0eAhl5BHZk84MdFFbKbLhfnFI'; // <--- KEY'İNİ EKLE
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVidmxja214emtuaXdoZXRiaWN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MDEzNjAsImV4cCI6MjA4NzI3NzM2MH0.e2XXUPmnLOywrKwmYc0eAhl5BHZk84MdFFbKbLhfnFI'; 
         const sb = supabase.createClient(SB_URL, SB_KEY);
 
         let allBooks = [];
@@ -138,26 +168,95 @@
             const { data } = await sb.from('books_v2').select('*').order('created_at', {ascending: false});
             if(data) {
                 allBooks = data;
-                renderCustomerDashboard();
-                renderAdminTable();
-                
-                // Oturum Kontrolü: Eğer zaten logindeyse admin ekranında kalsın
-                if(sessionStorage.getItem('isLogged') === 'true') {
-                    showView('admin', true);
-                }
+                updateStats();
+                renderCustomerGrid(allBooks.slice(0, 10)); // Başlangıçta son 10 kitap
+                if(sessionStorage.getItem('isLogged') === 'true') showView('admin', true);
             }
         }
 
-        function showView(viewId, force = false) {
-            if(viewId === 'admin' && sessionStorage.getItem('isLogged') !== 'true' && !force) {
-                showView('login');
+        // --- DASHBOARD ANALİZİ ---
+        function updateStats() {
+            document.getElementById('statTotal').innerText = allBooks.length;
+            document.getElementById('statNovel').innerText = allBooks.filter(b => (b.category || '').toLowerCase().includes('roman') || (b.title || '').toLowerCase().includes('roman')).length || 0;
+            document.getElementById('statClassic').innerText = allBooks.filter(b => (b.category || '').toLowerCase().includes('klasik') || (b.title || '').toLowerCase().includes('klasik')).length || 0;
+            document.getElementById('statShelves').innerText = [...new Set(allBooks.map(b => b.shelf_location))].length;
+        }
+
+        function resetAndShowHome() {
+            document.getElementById('custSearch').value = '';
+            document.getElementById('gridTitle').innerHTML = '<i class="fa fa-clock-rotate-left text-indigo-500"></i> Yeni Eklenenler';
+            renderCustomerGrid(allBooks.slice(0, 10));
+            showView('customer');
+        }
+
+        // --- MÜŞTERİ ARAMA & FİLTRE ---
+        function handleCustomerSearch(val) {
+            const grid = document.getElementById('mainGrid');
+            const title = document.getElementById('gridTitle');
+            
+            if(val.length > 1) {
+                title.innerHTML = `<i class="fa fa-search text-indigo-500"></i> "${val}" Sonuçları`;
+                const filtered = allBooks.filter(b => 
+                    (b.title || '').toLowerCase().includes(val.toLowerCase()) || 
+                    (b.author || '').toLowerCase().includes(val.toLowerCase()) ||
+                    (b.shelf_location || '').toLowerCase().includes(val.toLowerCase())
+                );
+                renderCustomerGrid(filtered);
+            } else {
+                resetAndShowHome();
+            }
+        }
+
+        function quickSearch(v) {
+            document.getElementById('custSearch').value = v;
+            handleCustomerSearch(v);
+        }
+
+        function renderCustomerGrid(data) {
+            const container = document.getElementById('mainGrid');
+            if(data.length === 0) {
+                container.innerHTML = '<p class="col-span-full text-center py-20 opacity-50">Sonuç bulunamadı.</p>';
                 return;
             }
+            container.innerHTML = data.map(b => `
+                <div class="book-card bg-white p-4 rounded-[32px] shadow-sm border border-slate-100 group">
+                    <img src="${b.cover_url || 'https://via.placeholder.com/250x380'}" class="w-full aspect-[2/3] object-cover rounded-[24px] mb-5 shadow-md">
+                    <h4 class="font-bold text-sm truncate px-1">${b.title}</h4>
+                    <p class="text-xs text-slate-400 truncate mb-4 px-1">${b.author || ''}</p>
+                    <div class="flex justify-between items-center px-1">
+                        <span class="text-[10px] font-black bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full uppercase">📍 ${b.shelf_location}</span>
+                        <span class="text-sm font-black">${b.price}₺</span>
+                    </div>
+                </div>`).join('');
+        }
 
-            document.querySelectorAll('.view-section, main').forEach(s => s.classList.remove('active'));
-            const target = document.getElementById('view-' + viewId) || document.getElementById('view-customer');
-            target.classList.add('active');
+        // --- ADMIN İŞLEMLERİ ---
+        function handleAdminSearch(val) {
+            const filtered = allBooks.filter(b => (b.title || '').toLowerCase().includes(val.toLowerCase()) || (b.author || '').toLowerCase().includes(val.toLowerCase()));
+            renderAdminTable(filtered);
+        }
 
+        function renderAdminTable(data) {
+            const tbody = document.getElementById('adminTableBody');
+            tbody.innerHTML = data.map(b => `
+                <tr class="border-b hover:bg-slate-50 transition">
+                    <td class="p-6 flex items-center gap-5">
+                        <img src="${b.cover_url}" class="w-12 h-16 rounded-xl object-cover shadow-sm">
+                        <div><div class="font-bold">${b.title}</div><div class="text-xs text-slate-400">${b.author}</div></div>
+                    </td>
+                    <td class="p-6 font-bold text-indigo-600">${b.shelf_location} / ${b.price}₺</td>
+                    <td class="p-6 text-right space-x-4">
+                        <button onclick='openEditor(${JSON.stringify(b).replace(/'/g, "&#39;")})' class="text-slate-300 hover:text-indigo-600"><i class="fa fa-edit"></i></button>
+                        <button onclick='deleteBook("${b.id}")' class="text-slate-300 hover:text-red-500"><i class="fa fa-trash"></i></button>
+                    </td>
+                </tr>`).join('');
+        }
+
+        function showView(v, force = false) {
+            if(v === 'admin' && sessionStorage.getItem('isLogged') !== 'true' && !force) { showView('login'); return; }
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.getElementById('view-' + v).classList.add('active');
+            if(v === 'admin') renderAdminTable(allBooks);
             if(sessionStorage.getItem('isLogged') === 'true') {
                 document.getElementById('loginBtn').classList.add('hidden');
                 document.getElementById('logoutBtn').classList.remove('hidden');
@@ -168,67 +267,49 @@
             if(document.getElementById('adminPin').value === "1234") {
                 sessionStorage.setItem('isLogged', 'true');
                 showView('admin');
-            } else { alert("Hatalı PIN!"); }
+            } else alert("PIN Hatalı!");
         }
 
-        function logout() { sessionStorage.removeItem('isLogged'); location.reload(); }
+        function logout() { sessionStorage.clear(); location.reload(); }
 
-        // --- MÜŞTERİ ---
-        function renderCustomerDashboard() {
-            const grid = document.getElementById('newArrivalsGrid');
-            grid.innerHTML = allBooks.slice(0, 4).map(b => bookCardTemplate(b)).join('');
-        }
-
-        function handleSearch(val) {
-            const dash = document.getElementById('customerDashboard');
-            const results = document.getElementById('searchResults');
-            const grid = document.getElementById('searchGrid');
-
-            if(val.length > 1) {
-                dash.classList.add('hidden');
-                results.classList.remove('hidden');
-                const filtered = allBooks.filter(b => 
-                    b.title.toLowerCase().includes(val.toLowerCase()) || 
-                    b.author.toLowerCase().includes(val.toLowerCase()) ||
-                    b.shelf_location.toLowerCase().includes(val.toLowerCase())
-                );
-                grid.innerHTML = filtered.map(b => bookCardTemplate(b)).join('');
-            } else {
-                dash.classList.remove('hidden');
-                results.classList.add('hidden');
+        // --- EDİTÖR ---
+        async function getCoverSuggestions() {
+            const title = document.getElementById('fTitle').value;
+            if(!title) return;
+            const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${title}&maxResults=6`);
+            const data = await res.json();
+            const grid = document.getElementById('suggestionsGrid');
+            grid.innerHTML = "";
+            if(data.items) {
+                document.getElementById('suggestionsArea').classList.remove('hidden');
+                data.items.forEach(item => {
+                    const info = item.volumeInfo;
+                    if(info.imageLinks) {
+                        const imgUrl = info.imageLinks.thumbnail.replace('http:', 'https:');
+                        const img = document.createElement('img');
+                        img.src = imgUrl;
+                        img.className = "w-full aspect-[2/3] object-cover rounded-lg cursor-pointer border-2 border-transparent hover:border-indigo-500";
+                        img.onclick = () => { document.getElementById('fCover').value = imgUrl; updatePreview(imgUrl); };
+                        grid.appendChild(img);
+                    }
+                });
             }
         }
 
-        function quickSearch(v) { document.getElementById('custSearch').value = v; handleSearch(v); }
-
-        function bookCardTemplate(b) {
-            return `<div class="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition-all group">
-                <img src="${b.cover_url || 'https://via.placeholder.com/200x300'}" class="w-full aspect-[2/3] object-cover rounded-2xl mb-4 group-hover:scale-105 transition">
-                <h4 class="font-bold text-sm truncate">${b.title}</h4>
-                <p class="text-xs text-slate-400 truncate mb-3">${b.author}</p>
-                <div class="flex justify-between items-center"><span class="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded">📍 ${b.shelf_location}</span><span class="text-sm font-black">${b.price}₺</span></div>
-            </div>`;
+        async function saveBook() {
+            const p = {
+                title: document.getElementById('fTitle').value,
+                author: document.getElementById('fAuthor').value,
+                shelf_location: document.getElementById('fShelf').value,
+                price: parseFloat(document.getElementById('fPrice').value) || 0,
+                cover_url: document.getElementById('fCover').value
+            };
+            const id = document.getElementById('fId').value;
+            const res = id ? await sb.from('books_v2').update(p).eq('id', id) : await sb.from('books_v2').insert([p]);
+            if(!res.error) { closeEditor(); init(); }
         }
 
-        // --- ADMIN ---
-        function renderAdminTable() {
-            const tbody = document.getElementById('adminTableBody');
-            tbody.innerHTML = allBooks.map(b => `
-                <tr class="border-b border-slate-50 hover:bg-slate-50 transition">
-                    <td class="p-5 flex items-center gap-4">
-                        <img src="${b.cover_url}" class="w-10 h-14 rounded-lg object-cover shadow-sm">
-                        <div><div class="font-bold text-slate-800">${b.title}</div><div class="text-xs text-slate-400">${b.author}</div></div>
-                    </td>
-                    <td class="p-5">
-                        <div class="text-xs font-bold text-indigo-600">${b.shelf_location}</div>
-                        <div class="text-sm font-black">${b.price}₺</div>
-                    </td>
-                    <td class="p-5 text-right">
-                        <button onclick='openEditor(${JSON.stringify(b).replace(/'/g, "&#39;")})' class="text-slate-400 hover:text-indigo-600 mr-4"><i class="fa fa-edit"></i></button>
-                        <button onclick='deleteBook("${b.id}")' class="text-slate-400 hover:text-red-500"><i class="fa fa-trash"></i></button>
-                    </td>
-                </tr>`).join('');
-        }
+        async function deleteBook(id) { if(confirm("Emin misiniz?")) { await sb.from('books_v2').delete().eq('id', id); init(); } }
 
         function openEditor(b = null) {
             document.getElementById('editorModal').classList.remove('hidden');
@@ -236,7 +317,6 @@
                 document.getElementById('fId').value = b.id;
                 document.getElementById('fTitle').value = b.title;
                 document.getElementById('fAuthor').value = b.author;
-                document.getElementById('fIsbn').value = b.isbn || "";
                 document.getElementById('fShelf').value = b.shelf_location;
                 document.getElementById('fPrice').value = b.price;
                 document.getElementById('fCover').value = b.cover_url;
@@ -244,60 +324,12 @@
             } else { resetEditor(); }
         }
 
-        async function saveBook() {
-            const payload = {
-                title: document.getElementById('fTitle').value,
-                author: document.getElementById('fAuthor').value,
-                isbn: document.getElementById('fIsbn').value,
-                shelf_location: document.getElementById('fShelf').value,
-                price: parseFloat(document.getElementById('fPrice').value) || 0,
-                cover_url: document.getElementById('fCover').value
-            };
-            const id = document.getElementById('fId').value;
-            const res = id ? await sb.from('books_v2').update(payload).eq('id', id) : await sb.from('books_v2').insert([payload]);
-            
-            if(!res.error) {
-                closeEditor();
-                init(); // Sayfa yenilemeden verileri güncelle
-            }
-        }
-
-        async function deleteBook(id) {
-            if(confirm("Emin misin?")) {
-                await sb.from('books_v2').delete().eq('id', id);
-                init();
-            }
-        }
-
-        async function autoFillByInfo() {
-            const title = document.getElementById('fTitle').value;
-            const author = document.getElementById('fAuthor').value;
-            const q = encodeURIComponent(`intitle:${title} inauthor:${author}`);
-            const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1`);
-            const data = await res.json();
-            if(data.items) {
-                const info = data.items[0].volumeInfo;
-                document.getElementById('fTitle').value = info.title;
-                document.getElementById('fAuthor').value = info.authors ? info.authors[0] : author;
-                const cover = info.imageLinks ? info.imageLinks.thumbnail.replace('http:', 'https:') : '';
-                document.getElementById('fCover').value = cover;
-                updatePreview(cover);
-                document.getElementById('fShelf').value = info.title[0].toUpperCase() + "1A";
-            }
-        }
-
-        function updatePreview(url) {
-            const img = document.getElementById('fPrevImg');
-            const placeholder = document.getElementById('fPrevPlaceholder');
-            if(url) { img.src = url; img.classList.remove('hidden'); placeholder.classList.add('hidden'); }
-            else { img.classList.add('hidden'); placeholder.classList.remove('hidden'); }
-        }
-
         function closeEditor() { document.getElementById('editorModal').classList.add('hidden'); }
-        function resetEditor() {
-            document.getElementById('fId').value = "";
-            document.querySelectorAll('#editorModal input').forEach(i => i.value = "");
-            updatePreview("");
+        function resetEditor() { document.querySelectorAll('#editorModal input').forEach(i => i.value = ""); updatePreview(""); }
+        function updatePreview(u) {
+            const i = document.getElementById('fPrevImg'); const p = document.getElementById('fPrevPlaceholder');
+            if(u) { i.src = u; i.classList.remove('hidden'); p.classList.add('hidden'); }
+            else { i.classList.add('hidden'); p.classList.remove('hidden'); }
         }
 
         init();
