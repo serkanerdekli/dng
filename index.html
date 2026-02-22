@@ -38,8 +38,13 @@
 <div id="adminPanel">
     <h3>Stok Girişi</h3>
     <div id="reader" style="width: 100%;"></div>
-    <input type="text" id="bIsbn" placeholder="ISBN">
+    <!-- Admin Panelindeki form alanları şunlar olmalı -->
     <input type="text" id="bTitle" placeholder="Kitap Adı">
+    <input type="text" id="bAuthor" placeholder="Yazar">
+    <input type="text" id="bIsbn" placeholder="ISBN">
+    <input type="text" id="bShelf" placeholder="Raf (Örn: A1A)">
+    <input type="number" id="bPrice" placeholder="Fiyat">
+<    input type="text" id="bCover" placeholder="Kapak Resmi URL (Opsiyonel)">
     <button class="btn" onclick="saveBook()">Kaydet</button>
     <button class="btn" style="background:gray" onclick="toggleAdmin()">Kapat</button>
 </div>
