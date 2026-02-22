@@ -84,3 +84,36 @@ export default function DnGBooks() {
     </div>
   );
 }
+// 1. Google Books API ile Veri Zenginleştirme
+async function fetchBookDetails(isbn) {
+    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+    const data = await response.json();
+    
+    if (data.items && data.items.length > 0) {
+        const info = data.items[0].volumeInfo;
+        return {
+            title: info.title,
+            author: info.authors ? info.authors.join(', ') : 'Bilinmiyor',
+            cover_url: info.imageLinks ? info.imageLinks.thumbnail : '',
+            description: info.description || '',
+            category: info.categories ? info.categories[0] : 'Genel'
+        };
+    }
+    return null;
+}
+
+// 2. Barkod Tarayıcıyı Başlatma (Mobil Kamera)
+function startScanner() {
+    const html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start(
+        { facingMode: "environment" }, // Arka kamera
+        { fps: 10, qrbox: { width: 250, height: 150 } },
+        async (decodedText) => {
+            console.log("Barkod Algılandı:", decodedText);
+            const bookData = await fetchBookDetails(decodedText);
+            if(bookData) {
+                saveToSupabase(decodedText, bookData);
+            }
+        }
+    );
+}
