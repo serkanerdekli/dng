@@ -3,337 +3,277 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dgbooks OS | Next-Gen Bookstore</title>
+    <title>Dgbooks | Yönetim ve Keşif</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0a0a0c; color: #e2e8f0; }
-        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        .active-view { display: block !important; animation: fadeIn 0.5s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .gradient-border { border: 1px solid; border-image: linear-gradient(to right, #6366f1, #a855f7) 1; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .admin-view, .customer-view, .login-view { display: none; }
+        .active { display: block; animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .book-card:hover { transform: translateY(-5px); transition: all 0.2s; }
     </style>
 </head>
-<body class="overflow-x-hidden">
+<body>
 
-    <!-- NAVIGASYON -->
-    <nav class="fixed top-0 w-full z-[100] px-8 py-4 glass flex justify-between items-center">
-        <div class="flex items-center gap-3 cursor-pointer" onclick="showView('customer')">
-            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                <i class="fa fa-book-q text-white"></i>
-            </div>
-            <h1 class="text-xl font-black tracking-tighter">DG<span class="text-indigo-500">BOOKS</span></h1>
+    <!-- ÜST MENÜ -->
+    <nav class="bg-white border-b border-slate-200 fixed top-0 w-full z-50 px-6 py-4 flex justify-between items-center shadow-sm">
+        <div class="flex items-center gap-2 cursor-pointer" onclick="showView('customer')">
+            <i class="fa fa-book-bookmark text-blue-600 text-2xl"></i>
+            <h1 class="text-xl font-bold tracking-tight text-slate-800">DGBOOKS</h1>
         </div>
-        <div id="navActions" class="flex gap-4">
-            <button onclick="showView('login')" id="loginBtn" class="text-sm font-semibold opacity-60 hover:opacity-100 transition">Yönetici Erişimi</button>
-            <button onclick="logout()" id="logoutBtn" class="hidden text-sm font-semibold text-red-400">Güvenli Çıkış</button>
+        <div id="nav-btns">
+            <button onclick="showView('login')" id="btn-to-admin" class="text-sm font-semibold text-slate-500 hover:text-blue-600 transition">Yönetici Girişi</button>
+            <button onclick="logout()" id="btn-logout" class="hidden text-sm font-semibold text-red-500">Çıkış Yap</button>
         </div>
     </nav>
 
-    <!-- MÜŞTERİ EKRANI (DASHBOARD) -->
-    <section id="view-customer" class="hidden min-h-screen pt-32 px-6 max-w-7xl mx-auto active-view">
-        <div class="text-center mb-16">
-            <h2 class="text-5xl md:text-7xl font-black mb-6 leading-none">Aradığın Kitabı <br><span class="text-indigo-500">Işınla.</span></h2>
-            
-            <div class="max-w-2xl mx-auto relative mb-6">
-                <i class="fa fa-search absolute left-6 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                <input type="text" id="custSearch" oninput="liveSearch(this.value)" 
-                    class="w-full pl-16 pr-6 py-5 rounded-3xl glass outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-lg"
-                    placeholder="İsim, yazar veya duygu ara...">
+    <!-- 1. MÜŞTERİ EKRANI (DASHBOARD) -->
+    <main id="customer-view" class="customer-view active pt-28 px-6 max-w-6xl mx-auto">
+        <!-- Arama ve Karşılama -->
+        <div class="text-center py-12">
+            <h2 class="text-4xl font-extrabold text-slate-900 mb-4">Hangi kitabı aramıştınız?</h2>
+            <div class="relative max-w-2xl mx-auto mb-6">
+                <i class="fa fa-search absolute left-5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="mainSearch" oninput="runSearch(this.value)" placeholder="Kitap adı, yazar veya raf kodu..." 
+                    class="w-full pl-14 pr-6 py-4 rounded-2xl border border-slate-200 shadow-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all text-lg">
             </div>
-            
-            <div class="flex flex-wrap justify-center gap-3 text-xs font-bold text-gray-400">
-                <span class="opacity-40 uppercase">Öneriler:</span>
-                <button onclick="setSearch('#Klasikler')" class="hover:text-indigo-400 transition">#Klasikler</button>
-                <button onclick="setSearch('Dostoyevski')" class="hover:text-indigo-400 transition">#Dostoyevski</button>
-                <button onclick="setSearch('A1A')" class="hover:text-indigo-400 transition">#Raf-A1A</button>
-                <button onclick="setSearch('Bilim')" class="hover:text-indigo-400 transition">#Bilim</button>
+            <div class="flex flex-wrap justify-center gap-3 text-sm text-slate-500">
+                <span>Popüler:</span>
+                <button onclick="quickSearch('Roman')" class="hover:text-blue-600 font-medium">#Roman</button>
+                <button onclick="quickSearch('Tarih')" class="hover:text-blue-600 font-medium">#Tarih</button>
+                <button onclick="quickSearch('A1A')" class="hover:text-blue-600 font-medium">#RafA1A</button>
             </div>
         </div>
 
-        <!-- KEŞİF DASHBOARD -->
-        <div id="defaultDashboard" class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
-            <div class="glass p-8 rounded-[40px] md:col-span-2">
-                <h3 class="text-2xl font-bold mb-6 flex items-center gap-3">
-                    <i class="fa fa-bolt text-yellow-400"></i> Yeni Gelenler
-                </h3>
-                <div id="newArrivals" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <!-- Son 4 kitap -->
+        <!-- Dashboard (Varsayılan Görünüm) -->
+        <div id="customer-dashboard" class="space-y-12 pb-20">
+            <section>
+                <h3 class="text-xl font-bold mb-6 flex items-center gap-2"><i class="fa fa-star text-yellow-500"></i> Yeni Gelenler</h3>
+                <div id="recent-grid" class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <!-- Son eklenen 4 kitap -->
                 </div>
-            </div>
-            <div class="glass p-8 rounded-[40px] flex flex-col justify-between">
-                <div>
-                    <h3 class="text-2xl font-bold mb-2">Mağaza Özeti</h3>
-                    <p class="text-sm opacity-50 mb-6">Canlı Envanter Analizi</p>
-                </div>
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center p-4 bg-white/5 rounded-2xl">
-                        <span>Toplam Eser</span>
-                        <span id="stat-total" class="font-black text-indigo-400 text-xl">0</span>
-                    </div>
-                    <div class="flex justify-between items-center p-4 bg-white/5 rounded-2xl">
-                        <span>Aktif Raf</span>
-                        <span id="stat-shelves" class="font-black text-purple-400 text-xl">0</span>
-                    </div>
-                </div>
+            </section>
+        </div>
+
+        <!-- Arama Sonuçları (Sadece arama yapınca görünür) -->
+        <div id="search-results-area" class="hidden pb-20">
+            <h3 class="text-xl font-bold mb-6 text-blue-600">Arama Sonuçları</h3>
+            <div id="search-grid" class="grid grid-cols-2 md:grid-cols-5 gap-6">
+                <!-- Sonuçlar -->
             </div>
         </div>
+    </main>
 
-        <!-- ARAMA SONUÇLARI (SADECE ARAMA YAPILINCA) -->
-        <div id="searchResults" class="hidden mb-20">
-            <h3 class="text-2xl font-bold mb-8">Arama Sonuçları</h3>
-            <div id="searchGrid" class="grid grid-cols-2 md:grid-cols-5 gap-6"></div>
+    <!-- 2. GİRİŞ EKRANI -->
+    <div id="login-view" class="login-view pt-40 px-6 max-w-md mx-auto">
+        <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-2xl">
+            <h2 class="text-2xl font-bold mb-6 text-center">Admin Erişimi</h2>
+            <input type="password" id="adminPin" placeholder="PIN Kodunu Girin" class="w-full p-4 border rounded-xl mb-4 text-center text-2xl tracking-widest outline-none focus:border-blue-500">
+            <button onclick="checkLogin()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg">Sisteme Giriş Yap</button>
+            <button onclick="showView('customer')" class="w-full mt-4 text-slate-400 text-sm">İptal Et</button>
         </div>
-    </section>
+    </div>
 
-    <!-- ADMIN LOGIN -->
-    <section id="view-login" class="hidden min-h-screen flex items-center justify-center px-6">
-        <div class="glass p-10 rounded-[40px] w-full max-w-md text-center">
-            <h2 class="text-3xl font-bold mb-6">Sistem Yetkisi</h2>
-            <input type="password" id="adminPin" class="w-full p-4 rounded-2xl bg-white/5 border border-white/10 outline-none focus:border-indigo-500 mb-4 text-center text-2xl tracking-[1em]" placeholder="****">
-            <button onclick="attemptLogin()" class="w-full bg-indigo-600 py-4 rounded-2xl font-bold hover:bg-indigo-700 transition">Sisteme Gir</button>
-            <button onclick="showView('customer')" class="mt-4 text-sm opacity-50">Geri Dön</button>
-        </div>
-    </section>
-
-    <!-- ADMIN DASHBOARD (ENVANTER YÖNETİMİ) -->
-    <section id="view-admin" class="hidden min-h-screen pt-32 px-6 max-w-7xl mx-auto">
-        <div class="flex justify-between items-end mb-10">
+    <!-- 3. ADMIN PANELİ (KONTROL MASASI) -->
+    <div id="admin-view" class="admin-view pt-28 px-6 max-w-7xl mx-auto pb-20">
+        <div class="flex justify-between items-center mb-8">
             <div>
-                <h2 class="text-4xl font-black">Komuta <span class="text-indigo-500">Merkezi</span></h2>
-                <p class="opacity-50">Envanterinize tam erişim sağlar.</p>
+                <h2 class="text-3xl font-black text-slate-900">Envanter Yönetimi</h2>
+                <p class="text-slate-500">Kitap ekleyin, düzenleyin veya silin.</p>
             </div>
-            <button onclick="openEditor()" class="bg-indigo-600 px-8 py-3 rounded-2xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-500/20">+ Yeni Kitap Ekle</button>
+            <button onclick="openEditor()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition">+ Yeni Kitap Ekle</button>
         </div>
 
-        <div class="glass rounded-[40px] overflow-hidden">
-            <div class="p-6 bg-white/5 border-b border-white/5 flex justify-between items-center">
-                <input type="text" id="adminTableSearch" oninput="filterAdminTable(this.value)" placeholder="Envanterde ara..." class="bg-transparent border border-white/10 px-4 py-2 rounded-xl outline-none text-sm w-64">
-                <span class="text-xs opacity-40 uppercase font-bold tracking-widest">Envanter Listesi</span>
-            </div>
-            <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-white/5 sticky top-0">
-                        <tr>
-                            <th class="p-4">Kitap Detayı</th>
-                            <th class="p-4">Raf</th>
-                            <th class="p-4">Fiyat</th>
-                            <th class="p-4">Kategori</th>
-                            <th class="p-4 text-right">Aksiyon</th>
-                        </tr>
-                    </thead>
-                    <tbody id="adminTableBody">
-                        <!-- Admin satırları -->
-                    </tbody>
-                </table>
-            </div>
+        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="p-4 font-bold text-slate-600">Kitap Bilgisi</th>
+                        <th class="p-4 font-bold text-slate-600 text-center">Raf</th>
+                        <th class="p-4 font-bold text-slate-600">Fiyat</th>
+                        <th class="p-4 font-bold text-slate-600 text-right">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-table-body">
+                    <!-- Veriler buraya gelecek -->
+                </tbody>
+            </table>
         </div>
-    </section>
+    </div>
 
-    <!-- KİTAP EDİTÖRÜ (MODAL) -->
-    <div id="editorModal" class="hidden fixed inset-0 z-[200] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 overflow-y-auto">
-        <div class="glass w-full max-w-4xl rounded-[40px] p-10 border border-white/10">
-            <div class="flex justify-between items-center mb-8">
-                <h2 class="text-3xl font-bold" id="editorTitle">Kitap Verisi</h2>
-                <button onclick="closeEditor()" class="text-3xl">&times;</button>
+    <!-- EDİTÖR MODAL -->
+    <div id="editor-modal" class="hidden fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl p-8 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="modal-title" class="text-2xl font-bold">Kitap Detayı</h3>
+                <button onclick="closeEditor()" class="text-2xl text-slate-400 hover:text-slate-900">&times;</button>
             </div>
-            <div class="grid md:grid-cols-2 gap-8">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="space-y-4">
                     <div class="flex gap-2">
-                        <input type="text" id="fIsbn" placeholder="ISBN (Yaz ve Bekle)" class="flex-1 bg-white/5 p-4 rounded-2xl outline-none border border-white/10 focus:border-indigo-500" onchange="autoFillGoogle(this.value)">
+                        <input type="text" id="fIsbn" placeholder="ISBN No" class="flex-1 p-3 border rounded-xl outline-none focus:border-blue-500">
+                        <button onclick="lookupIsbn()" class="bg-slate-100 px-4 rounded-xl hover:bg-slate-200 transition">Bul</button>
                     </div>
-                    <input type="text" id="fTitle" placeholder="Kitap Adı" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10">
-                    <input type="text" id="fAuthor" placeholder="Yazar" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10">
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="text" id="fShelf" placeholder="Raf (A1A)" class="bg-white/5 p-4 rounded-2xl border border-white/10 text-center">
-                        <input type="number" id="fPrice" placeholder="Fiyat" class="bg-white/5 p-4 rounded-2xl border border-white/10">
+                    <input type="text" id="fTitle" placeholder="Kitap Adı" class="w-full p-3 border rounded-xl">
+                    <input type="text" id="fAuthor" placeholder="Yazar" class="w-full p-3 border rounded-xl">
+                    <div class="flex gap-4">
+                        <input type="text" id="fShelf" placeholder="Raf (A1A)" class="flex-1 p-3 border rounded-xl">
+                        <input type="number" id="fPrice" placeholder="Fiyat" class="flex-1 p-3 border rounded-xl">
                     </div>
-                    <select id="fCategory" class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none">
+                    <select id="fCategory" class="w-full p-3 border rounded-xl bg-white">
                         <option value="Roman">Roman</option>
-                        <option value="Bilim">Bilim</option>
                         <option value="Tarih">Tarih</option>
+                        <option value="Bilim">Bilim</option>
                         <option value="Klasik">Klasik</option>
                     </select>
                     <input type="hidden" id="fId">
                     <input type="hidden" id="fCover">
-                    <button onclick="saveBook()" class="w-full bg-indigo-600 py-5 rounded-[25px] font-black text-xl hover:bg-indigo-700">SİSTEMİ GÜNCELLE</button>
+                    <button onclick="handleSave()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition">Kaydet</button>
                 </div>
-                <div class="bg-white/5 rounded-[40px] flex flex-col items-center justify-center p-6 border-2 border-dashed border-white/10">
-                    <img id="fPrevImg" src="" class="max-h-[300px] rounded-2xl shadow-2xl hidden">
-                    <p id="fPrevText" class="text-gray-500">Kapak Önizleme</p>
+                <div class="bg-slate-50 rounded-2xl flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-200">
+                    <img id="fPrevImg" src="" class="max-h-[200px] rounded-lg shadow-md hidden mb-2">
+                    <p id="fPrevText" class="text-slate-400 text-sm text-center">Kapak resmi Google'dan otomatik alınır.</p>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        const SB_URL = 'https://ubvlckmxzkniwhetbicx.supabase.co';
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVidmxja214emtuaXdoZXRiaWN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MDEzNjAsImV4cCI6MjA4NzI3NzM2MH0.e2XXUPmnLOywrKwmYc0eAhl5BHZk84MdFFbKbLhfnFI'; // <--- KEY'İNİ BURAYA YAPIŞTIR
-        const sb = supabase.createClient(SB_URL, SB_KEY);
+        // --- KONFIGURASYON ---
+        const SUPABASE_URL = 'https://ubvlckmxzkniwhetbicx.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVidmxja214emtuaXdoZXRiaWN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MDEzNjAsImV4cCI6MjA4NzI3NzM2MH0.e2XXUPmnLOywrKwmYc0eAhl5BHZk84MdFFbKbLhfnFI'; // <--- KEY'İ EKLEMEYİ UNUTMA
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let allBooks = [];
+        let booksCache = [];
 
+        // --- BAŞLATMA ---
         async function init() {
-            const { data, error } = await sb.from('books_v2').select('*').order('created_at', {ascending: false});
-            if(data) {
-                allBooks = data;
-                renderCustomerDashboard();
-                updateStats();
+            const { data, error } = await sb.from('books_v2').select('*').order('created_at', { ascending: false });
+            if (data) {
+                booksCache = data;
+                renderRecent();
             }
         }
 
         // --- GÖRÜNÜM YÖNETİMİ ---
-        function showView(viewId) {
-            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
-            document.getElementById('view-' + viewId).classList.add('active-view');
+        function showView(view) {
+            document.querySelectorAll('main, .admin-view, .login-view').forEach(v => v.classList.remove('active'));
+            document.getElementById(view + '-view').classList.add('active');
             
-            if(viewId === 'admin') {
-                if(!sessionStorage.getItem('isLogged')) {
-                    showView('login');
-                } else {
-                    renderAdminTable(allBooks);
-                    document.getElementById('loginBtn').classList.add('hidden');
-                    document.getElementById('logoutBtn').classList.remove('hidden');
-                }
-            }
+            if(view === 'admin') renderAdminTable();
         }
 
-        function attemptLogin() {
-            const pin = document.getElementById('adminPin').value;
-            if(pin === "1234") {
-                sessionStorage.setItem('isLogged', 'true');
+        function checkLogin() {
+            if(document.getElementById('adminPin').value === "1234") {
+                localStorage.setItem('dgAuth', 'true');
+                document.getElementById('btn-to-admin').classList.add('hidden');
+                document.getElementById('btn-logout').classList.remove('hidden');
                 showView('admin');
-            } else {
-                alert("Geçersiz PIN!");
-            }
+            } else { alert("Hatalı PIN!"); }
         }
 
         function logout() {
-            sessionStorage.removeItem('isLogged');
+            localStorage.removeItem('dgAuth');
             location.reload();
         }
 
-        // --- MÜŞTERİ DASHBOARD ---
-        function renderCustomerDashboard() {
-            const newBooks = allBooks.slice(0, 4);
-            const container = document.getElementById('newArrivals');
-            container.innerHTML = newBooks.map(b => `
-                <div class="group cursor-pointer" onclick="setSearch('${b.title}')">
-                    <div class="aspect-[2/3] rounded-2xl overflow-hidden mb-3 glass">
-                        <img src="${b.cover_url}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
-                    </div>
-                    <h4 class="text-[10px] font-bold truncate opacity-80 uppercase">${b.title}</h4>
-                </div>
-            `).join('');
+        // --- MÜŞTERİ FONKSİYONLARI ---
+        function renderRecent() {
+            const recent = booksCache.slice(0, 4);
+            const grid = document.getElementById('recent-grid');
+            grid.innerHTML = recent.map(b => bookCardTemplate(b)).join('');
         }
 
-        function updateStats() {
-            document.getElementById('stat-total').innerText = allBooks.length;
-            const shelves = [...new Set(allBooks.map(b => b.shelf_location))].length;
-            document.getElementById('stat-shelves').innerText = shelves;
-        }
-
-        function liveSearch(val) {
-            const dash = document.getElementById('defaultDashboard');
-            const results = document.getElementById('searchResults');
-            const grid = document.getElementById('searchGrid');
+        function runSearch(val) {
+            const dash = document.getElementById('customer-dashboard');
+            const searchArea = document.getElementById('search-results-area');
+            const grid = document.getElementById('search-grid');
 
             if(val.length > 1) {
                 dash.classList.add('hidden');
-                results.classList.remove('hidden');
-                const filtered = allBooks.filter(b => 
+                searchArea.classList.remove('hidden');
+                const filtered = booksCache.filter(b => 
                     b.title.toLowerCase().includes(val.toLowerCase()) || 
                     b.author.toLowerCase().includes(val.toLowerCase()) ||
                     b.shelf_location.toLowerCase().includes(val.toLowerCase())
                 );
-                
-                if(filtered.length > 0) {
-                    grid.innerHTML = filtered.map(b => `
-                        <div class="glass p-4 rounded-3xl text-center group">
-                            <img src="${b.cover_url}" class="w-full aspect-[2/3] object-cover rounded-2xl mb-4 group-hover:scale-105 transition">
-                            <h4 class="font-bold text-sm truncate">${b.title}</h4>
-                            <span class="text-[10px] text-indigo-400 font-bold">${b.shelf_location}</span>
-                            <p class="text-xs font-black mt-2">${b.price}₺</p>
-                        </div>
-                    `).join('');
-                } else {
-                    grid.innerHTML = `<p class="col-span-full opacity-50 text-center py-20">Üzgünüz, aradığınız kriterde kitap bulamadık.</p>`;
-                }
+                grid.innerHTML = filtered.map(b => bookCardTemplate(b)).join('');
             } else {
                 dash.classList.remove('hidden');
-                results.classList.add('hidden');
+                searchArea.classList.add('hidden');
             }
         }
 
-        function setSearch(val) {
-            document.getElementById('custSearch').value = val;
-            liveSearch(val);
+        function quickSearch(val) {
+            document.getElementById('mainSearch').value = val;
+            runSearch(val);
         }
 
-        // --- ADMIN KOMUTA MERKEZİ ---
-        function renderAdminTable(data) {
-            const tbody = document.getElementById('adminTableBody');
-            tbody.innerHTML = data.map(b => `
-                <tr class="border-b border-white/5 hover:bg-white/5 transition">
-                    <td class="p-4 flex items-center gap-3">
-                        <img src="${b.cover_url}" class="w-8 h-12 rounded object-cover">
+        function bookCardTemplate(b) {
+            return `
+                <div class="book-card bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 p-3">
+                    <img src="${b.cover_url || 'https://via.placeholder.com/150x220?text=Dgbooks'}" class="w-full aspect-[2/3] object-cover rounded-xl mb-3">
+                    <h4 class="font-bold text-sm truncate">${b.title}</h4>
+                    <p class="text-xs text-slate-500 mb-2 truncate">${b.author}</p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded">📍 ${b.shelf_location}</span>
+                        <span class="text-sm font-bold">${b.price}₺</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- ADMIN FONKSİYONLARI ---
+        function renderAdminTable() {
+            const tbody = document.getElementById('admin-table-body');
+            tbody.innerHTML = booksCache.map(b => `
+                <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+                    <td class="p-4 flex items-center gap-4">
+                        <img src="${b.cover_url}" class="w-10 h-14 object-cover rounded shadow-sm">
                         <div>
-                            <div class="font-bold">${b.title}</div>
-                            <div class="text-[10px] opacity-40">${b.author}</div>
+                            <div class="font-bold text-slate-800">${b.title}</div>
+                            <div class="text-xs text-slate-400">${b.author}</div>
                         </div>
                     </td>
-                    <td class="p-4"><span class="bg-indigo-500/20 text-indigo-400 px-2 py-1 rounded text-xs font-bold">${b.shelf_location}</span></td>
+                    <td class="p-4 text-center font-mono font-bold text-blue-600">${b.shelf_location}</td>
                     <td class="p-4 font-bold">${b.price}₺</td>
-                    <td class="p-4 opacity-60">${b.category || 'Roman'}</td>
                     <td class="p-4 text-right">
-                        <button onclick='openEditor(${JSON.stringify(b).replace(/'/g, "&#39;")})' class="text-indigo-400 hover:text-white mr-3"><i class="fa fa-edit"></i></button>
-                        <button onclick='deleteBook("${b.id}")' class="text-red-400 hover:text-white"><i class="fa fa-trash"></i></button>
+                        <button onclick='openEditor(${JSON.stringify(b).replace(/'/g, "&#39;")})' class="p-2 text-slate-400 hover:text-blue-600"><i class="fa fa-edit"></i></button>
+                        <button onclick='handleDelete("${b.id}")' class="p-2 text-slate-400 hover:text-red-500"><i class="fa fa-trash"></i></button>
                     </td>
                 </tr>
             `).join('');
         }
 
-        function filterAdminTable(val) {
-            const filtered = allBooks.filter(b => b.title.toLowerCase().includes(val.toLowerCase()) || b.author.toLowerCase().includes(val.toLowerCase()));
-            renderAdminTable(filtered);
-        }
-
-        // --- EDİTÖR İŞLEMLERİ ---
         function openEditor(b = null) {
-            document.getElementById('editorModal').classList.remove('hidden');
+            document.getElementById('editor-modal').classList.remove('hidden');
             if(b) {
-                document.getElementById('editorTitle').innerText = "Kitabı Düzenle";
+                document.getElementById('modal-title').innerText = "Kitabı Düzenle";
                 document.getElementById('fId').value = b.id;
                 document.getElementById('fTitle').value = b.title;
                 document.getElementById('fAuthor').value = b.author;
-                document.getElementById('fIsbn').value = b.isbn;
+                document.getElementById('fIsbn').value = b.isbn || "";
                 document.getElementById('fShelf').value = b.shelf_location;
                 document.getElementById('fPrice').value = b.price;
                 document.getElementById('fCategory').value = b.category || "Roman";
                 document.getElementById('fCover').value = b.cover_url;
-                document.getElementById('fPrevImg').src = b.cover_url;
-                document.getElementById('fPrevImg').classList.remove('hidden');
-                document.getElementById('fPrevText').classList.add('hidden');
+                updatePreview(b.cover_url);
             } else {
-                resetEditor();
+                document.getElementById('modal-title').innerText = "Yeni Kitap";
+                document.getElementById('fId').value = "";
+                document.querySelectorAll('#editor-modal input').forEach(i => i.value = "");
+                updatePreview("");
             }
         }
 
-        function closeEditor() { document.getElementById('editorModal').classList.add('hidden'); }
+        function closeEditor() { document.getElementById('editor-modal').classList.add('hidden'); }
 
-        function resetEditor() {
-            document.getElementById('editorTitle').innerText = "Yeni Kitap";
-            document.getElementById('fId').value = "";
-            document.querySelectorAll('#editorModal input').forEach(i => i.value = "");
-            document.getElementById('fPrevImg').classList.add('hidden');
-            document.getElementById('fPrevText').classList.remove('hidden');
-        }
-
-        async function autoFillGoogle(isbn) {
+        async function lookupIsbn() {
+            const isbn = document.getElementById('fIsbn').value;
             if(!isbn) return;
             const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
             const data = await res.json();
@@ -343,34 +283,37 @@
                 document.getElementById('fAuthor').value = info.authors ? info.authors[0] : '';
                 const cover = info.imageLinks ? info.imageLinks.thumbnail.replace('http:', 'https:') : '';
                 document.getElementById('fCover').value = cover;
-                document.getElementById('fPrevImg').src = cover;
-                document.getElementById('fPrevImg').classList.remove('hidden');
-                document.getElementById('fPrevText').classList.add('hidden');
+                updatePreview(cover);
                 document.getElementById('fShelf').value = info.title[0].toUpperCase() + "1A";
             }
         }
 
-        async function saveBook() {
+        function updatePreview(url) {
+            const img = document.getElementById('fPrevImg');
+            const txt = document.getElementById('fPrevText');
+            if(url) { img.src = url; img.classList.remove('hidden'); txt.classList.add('hidden'); }
+            else { img.classList.add('hidden'); txt.classList.remove('hidden'); }
+        }
+
+        async function handleSave() {
             const payload = {
                 title: document.getElementById('fTitle').value,
                 author: document.getElementById('fAuthor').value,
                 isbn: document.getElementById('fIsbn').value,
                 shelf_location: document.getElementById('fShelf').value,
-                price: parseFloat(document.getElementById('fPrice').value),
+                price: parseFloat(document.getElementById('fPrice').value) || 0,
                 category: document.getElementById('fCategory').value,
                 cover_url: document.getElementById('fCover').value
             };
             const id = document.getElementById('fId').value;
+            const { error } = id ? await sb.from('books_v2').update(payload).eq('id', id) : await sb.from('books_v2').insert([payload]);
             
-            const res = id ? await sb.from('books_v2').update(payload).eq('id', id) : await sb.from('books_v2').insert([payload]);
-            if(!res.error) {
-                alert("Veritabanı Güncellendi!");
-                location.reload();
-            }
+            if(!error) { alert("Başarılı!"); location.reload(); }
+            else { alert("Hata: " + error.message); }
         }
 
-        async function deleteBook(id) {
-            if(confirm("Bu eseri tamamen silmek istediğinize emin misiniz?")) {
+        async function handleDelete(id) {
+            if(confirm("Emin misiniz?")) {
                 await sb.from('books_v2').delete().eq('id', id);
                 location.reload();
             }
