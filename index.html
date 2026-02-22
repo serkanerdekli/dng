@@ -97,7 +97,47 @@
         }
         displayBooks(books);
     }
+// Google'dan veri çekerken kapak resmini ve fiyatı da alalım
+async function fetchFromGoogle(isbn) {
+    try {
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+        const data = await res.json();
+        if(data.items && data.items.length > 0) {
+            const info = data.items[0].volumeInfo;
+            document.getElementById('bTitle').value = info.title || '';
+            document.getElementById('bAuthor').value = info.authors ? info.authors[0] : '';
+            document.getElementById('bIsbn').value = isbn;
+            document.getElementById('bCover').value = info.imageLinks ? info.imageLinks.thumbnail : '';
+            // Otomatik Raf: Baş harf + 1A
+            document.getElementById('bShelf').value = (info.title.charAt(0).toUpperCase()) + "1A";
+            alert("Kitap bilgileri Google'dan getirildi!");
+        }
+    } catch (err) {
+        console.error("Google API Hatası:", err);
+    }
+}
 
+// Kaydetme işlemine yeni alanları ekliyoruz
+async function saveBook() {
+    const book = {
+        title: document.getElementById('bTitle').value,
+        author: document.getElementById('bAuthor').value,
+        isbn: document.getElementById('bIsbn').value,
+        shelf_location: document.getElementById('bShelf').value,
+        price: parseFloat(document.getElementById('bPrice').value) || 0,
+        cover_url: document.getElementById('bCover').value || ''
+    };
+
+    const { error } = await supabaseClient.from('books_v2').upsert([book]);
+    
+    if(!error) { 
+        alert("✅ Kitap Envantere İşlendi!"); 
+        toggleAdmin(); // Paneli kapat
+        loadAllBooks(); // Listeyi yenile
+    } else {
+        alert("❌ Hata: " + error.message);
+    }
+}
     // 3. Ekrana Basma
     function displayBooks(booksList) {
         const container = document.getElementById('results');
