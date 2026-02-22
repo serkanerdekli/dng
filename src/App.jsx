@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import Fuse from 'fuse.js';
-import { Search, Lock, MapPin, LogOut, BookOpen, UserPlus } from 'lucide-react';
+import { Search, Lock, MapPin, LogOut, BookOpen, UserPlus, Settings, Save } from 'lucide-react';
 
-// Supabase Bağlantısı
+// Render Environment Variables üzerinden bağlantı
 const supabase = createClient(
-  "https://ubvlckmxzkniwhetbicx.supabase.co",
-  "sb_publishable_kU78ZAd9Bo8SjhGtRXcrOw_nw9Pof" // Sizin verdiğiniz key
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
 );
 
 export default function DnGBooks() {
@@ -15,27 +15,29 @@ export default function DnGBooks() {
   const [search, setSearch] = useState("");
   const [view, setView] = useState('customer');
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+  const [loading, setLoading] = useState(true);
 
-  // 1. Verileri Supabase'den Çek
+  // 1. Verileri Canlı Çek
   useEffect(() => {
     fetchBooks();
   }, []);
 
   const fetchBooks = async () => {
+    setLoading(true);
     const { data, error } = await supabase.from('books').select('*').order('title', { ascending: true });
-    if (!error) setBooks(data);
+    if (!error) {
+      // Eğer veritabanında fiyat veya raf boşsa otomatik ata (İlk yükleme için)
+      const sanitizedData = data.map(b => ({
+        ...b,
+        price: b.price || 200,
+        shelf: b.shelf || (b.title ? b.title.trim().charAt(0).toUpperCase() + "1A" : "A1A")
+      }));
+      setBooks(sanitizedData);
+    }
+    setLoading(false);
   };
 
-  // 2. Google Books'tan Kapak Görseli Getir (Envanter Zenginleştirme)
-  const getCover = async (title, author) => {
-    try {
-      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${title}+inauthor:${author}`);
-      const data = await res.json();
-      return data.items?.[0]?.volumeInfo?.imageLinks?.thumbnail || null;
-    } catch (e) { return null; }
-  };
-
-  // 3. Giriş Kontrolü (DB tabanlı)
+  // 2. Dinamik Giriş (Supabase Personel Tablosu)
   const handleLogin = async (e) => {
     e.preventDefault();
     const { data, error } = await supabase
@@ -49,78 +51,100 @@ export default function DnGBooks() {
       setUser(data);
       setView('customer');
     } else {
-      alert("Yetkisiz erişim! Bilgileri kontrol edin.");
+      alert("Hatalı Giriş!");
     }
   };
 
-  // Arama Motoru
+  // 3. Admin: Personel Ekleme Fonksiyonu
+  const addStaff = async () => {
+    const name = prompt("Personel Adı:");
+    const user_name = prompt("Kullanıcı Adı:");
+    const pass = prompt("Şifre:");
+    if(name && user_name && pass) {
+      const { error } = await supabase.from('staff').insert([{ full_name: name, username: user_name, password: pass, role: 'staff' }]);
+      if(!error) alert("Yeni personel başarıyla eklendi!");
+    }
+  };
+
+  // Arama Ayarları
   const fuse = new Fuse(books, { keys: ["title", "author"], threshold: 0.3 });
-  const results = search ? fuse.search(search).map(r => r.item) : books.slice(0, 20);
+  const results = search ? fuse.search(search).map(r => r.item) : books.slice(0, 30);
+
+  if (loading) return <div className="min-h-screen bg-[#fdf5e6] flex items-center justify-center font-serif italic text-2xl opacity-50 animate-pulse">Arşiv rafları taranıyor...</div>;
 
   return (
     <div className="min-h-screen bg-[#fdf5e6] text-[#2c1b18] font-serif">
-      {/* Header */}
-      <nav className="border-b border-[#2c1b18]/10 p-4 flex justify-between items-center sticky top-0 bg-[#fdf5e6]/90 backdrop-blur-sm z-50">
-        <div>
-          <h1 className="text-3xl font-bold italic tracking-tighter">DnGBooks</h1>
-          <p className="text-[9px] uppercase tracking-[0.3em] opacity-50 font-sans">Dynamic Inventory System v2.0</p>
+      {/* Navigasyon */}
+      <nav className="border-b border-[#2c1b18]/10 p-5 flex justify-between items-center sticky top-0 bg-[#fdf5e6]/95 backdrop-blur-md z-50 shadow-sm">
+        <div onClick={() => setView('customer')} className="cursor-pointer">
+          <h1 className="text-3xl font-bold italic tracking-tighter uppercase">DnGBooks</h1>
+          <p className="text-[10px] tracking-[0.4em] uppercase opacity-40 font-sans">Envanter Yönetimi</p>
         </div>
-        <div className="flex gap-4 items-center">
+        
+        <div className="flex items-center gap-6">
           {user?.role === 'admin' && (
-            <button onClick={() => alert("Personel Yönetimi Yakında!")} className="text-xs flex items-center gap-1 border border-ink/20 px-2 py-1">
-              <UserPlus size={14} /> Personel Ekle
+            <button onClick={addStaff} className="text-[10px] bg-[#2c1b18] text-white px-3 py-1 uppercase tracking-widest font-bold flex items-center gap-2 hover:bg-black transition-all">
+              <UserPlus size={14} /> Personel Tanımla
             </button>
           )}
           {!user ? (
-            <button onClick={() => setView('login')} className="text-sm italic hover:underline flex items-center gap-1"><Lock size={14} /> Giriş</button>
+            <button onClick={() => setView('login')} className="flex items-center gap-2 text-sm italic opacity-70 hover:opacity-100"><Lock size={14} /> Sisteme Giriş</button>
           ) : (
-            <button onClick={() => setUser(null)} className="text-stamp text-sm flex items-center gap-1 font-bold italic"><LogOut size={14} /> Çıkış ({user.username})</button>
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] border border-ink/20 px-2 py-1 uppercase font-bold">{user.username}</span>
+              <button onClick={() => setUser(null)} className="text-[#8b0000] text-sm font-bold italic underline">Çıkış</button>
+            </div>
           )}
         </div>
       </nav>
 
       <main className="max-w-5xl mx-auto p-6">
         {view === 'login' ? (
-          <div className="max-w-sm mx-auto mt-20 p-8 border border-ink/20 bg-white shadow-2xl">
-            <h2 className="text-xl font-bold mb-6 text-center underline italic">Güvenli Erişim</h2>
-            <form onSubmit={handleLogin} className="space-y-4">
+          <div className="max-w-sm mx-auto mt-20 p-10 border border-ink/20 bg-white shadow-2xl relative">
+            <div className="absolute top-0 right-0 p-2 text-[10px] font-mono opacity-20 rotate-90">SECURE LOGIN</div>
+            <h2 className="text-2xl mb-8 font-bold text-center underline italic tracking-tighter">Personel Kartı</h2>
+            <form onSubmit={handleLogin} className="space-y-6">
               <input type="text" placeholder="Kullanıcı Adı" className="w-full bg-transparent border-b border-ink p-2 outline-none font-mono" onChange={e => setLoginForm({...loginForm, username: e.target.value})} />
               <input type="password" placeholder="Şifre" className="w-full bg-transparent border-b border-ink p-2 outline-none font-mono" onChange={e => setLoginForm({...loginForm, password: e.target.value})} />
-              <button className="w-full bg-[#2c1b18] text-[#fdf5e6] py-3 font-bold hover:bg-black transition-all">MÜHRÜ ONAYLA</button>
-              <button type="button" onClick={() => setView('customer')} className="w-full text-xs opacity-40 italic mt-2">Ziyaretçi Olarak Devam Et</button>
+              <button className="w-full bg-[#2c1b18] text-[#fdf5e6] py-4 font-bold text-sm tracking-widest hover:tracking-[0.3em] transition-all uppercase">Mührü Bas</button>
             </form>
           </div>
         ) : (
-          <div className="animate-in fade-in duration-1000">
-            {/* Arama */}
-            <div className="relative mb-12 mt-4">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
+            {/* Arama Alanı */}
+            <div className="relative mb-16 mt-6">
               <input 
-                type="text" placeholder="Kitap, yazar veya raf kodu ara..." 
-                className="w-full bg-transparent border-b-2 border-ink/10 py-6 text-4xl outline-none focus:border-ink transition-all placeholder:opacity-20 italic font-light"
+                type="text" 
+                placeholder="Kitap ismi, yazar veya raf kodu yazınız..." 
+                className="w-full bg-transparent border-b-2 border-ink/10 py-8 text-4xl outline-none focus:border-ink transition-all placeholder:opacity-20 italic font-light tracking-tight"
                 onChange={e => setSearch(e.target.value)}
               />
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 opacity-10" size={40} />
+              <Search className="absolute right-4 top-1/2 -translate-y-1/2 opacity-10" size={48} />
             </div>
 
-            {/* Sonuçlar */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
+            {/* Kitaplar */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-20 gap-y-16">
               {results.map(book => (
-                <div key={book.id} className="group border-b border-ink/5 pb-8 flex gap-6 items-start">
-                  <div className="w-24 h-36 bg-ink/5 border border-ink/10 flex-shrink-0 shadow-inner flex items-center justify-center relative overflow-hidden">
+                <div key={book.id} className="group border-b border-ink/10 pb-10 flex gap-8 items-start hover:border-ink/30 transition-all">
+                  {/* Kitap Kapağı Alanı */}
+                  <div className="w-28 h-40 bg-ink/5 border border-ink/10 flex-shrink-0 shadow-lg relative overflow-hidden flex items-center justify-center">
                     <BookOpen size={24} className="opacity-10 absolute" />
-                    {/* Kitap kapağı alanı - Gerçek API ile beslenebilir */}
-                    <div className="text-[8px] text-center p-2 opacity-20 uppercase font-mono">Görsel Yükleniyor...</div>
+                    <div className="text-[10px] text-center p-3 opacity-20 uppercase font-mono leading-none">Görsel Kaydı Bekleniyor</div>
                   </div>
-                  <div className="flex-1 flex flex-col justify-between h-full">
+
+                  <div className="flex-1 flex flex-col justify-between h-40">
                     <div>
-                      <h3 className="text-xl font-bold uppercase leading-tight mb-1 group-hover:text-stamp transition-colors">{book.title}</h3>
-                      <p className="text-sm italic opacity-60 font-sans">{book.author}</p>
+                      <h3 className="text-2xl font-bold uppercase leading-none mb-2 group-hover:text-stamp transition-colors">{book.title}</h3>
+                      <p className="text-lg italic opacity-60 font-serif leading-tight">{book.author}</p>
                     </div>
-                    <div className="mt-4 flex justify-between items-end">
-                      <div className="bg-ink text-paper text-[10px] px-2 py-1 font-mono font-bold flex items-center gap-1 shadow-sm">
-                        <MapPin size={10} /> {book.shelf}
+                    <div className="flex justify-between items-end">
+                      <div className="flex flex-col gap-1">
+                         <span className="text-[10px] font-sans opacity-40 uppercase tracking-widest">Mağaza Konumu</span>
+                         <div className="bg-ink text-paper text-xs px-3 py-1 font-mono font-bold flex items-center gap-2 shadow-md w-fit">
+                            <MapPin size={12} className="text-stamp" /> {book.shelf}
+                         </div>
                       </div>
-                      <div className="text-2xl font-bold text-stamp border-b-2 border-stamp px-1">
+                      <div className="text-3xl font-bold text-stamp border-b-4 border-double border-stamp px-1 tracking-tighter">
                         {book.price},00 ₺
                       </div>
                     </div>
@@ -130,11 +154,15 @@ export default function DnGBooks() {
             </div>
             
             {results.length === 0 && (
-              <div className="text-center py-20 opacity-20 italic text-2xl">Arşivde böyle bir kayıt bulunamadı...</div>
+              <div className="text-center py-40 opacity-30 italic text-3xl font-light">Aradığınız eser arşivde bulunamadı...</div>
             )}
           </div>
         )}
       </main>
+
+      <footer className="mt-60 p-20 border-t border-ink/5 text-center bg-white/30">
+        <p className="text-[10px] tracking-[0.5em] opacity-30 uppercase font-bold">DnGBooks • Sahaf Ruhu, Dijital Güç • 2026</p>
+      </footer>
     </div>
   );
 }
